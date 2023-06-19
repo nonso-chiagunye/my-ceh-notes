@@ -1,0 +1,308 @@
+MODULE 8 - SNIFFING
+
+PS: There are two types of sniffing: passive and active. Passive sniffing refers to sniffing on a hub-based network; active sniffing refers to sniffing on a switch-based network.
+
+PS: Some of these vulnerable protocols include HTTP, FTP, SMTP, POP, Telnet, IMAP, and NNTP. The sniffed traffic comprises data such as FTP and Telnet passwords, chat sessions, email and web traffic, and DNS traffic. 
+
+PS: Packet sniffers are used to convert the host system’s NIC to promiscuous mode. The NIC in promiscuous mode can then capture the packets addressed to the specific network.
+
+PS: There are two types of sniffing. Each is used for different types of networks. The two types are:
+
+- Passive Sniffing: Passive sniffing involves sending no packets. It only captures and monitors the packets flowing in the network
+
+- Active Sniffing: Active sniffing searches for traffic on a switched LAN by actively injecting traffic into the LAN; it also refers   to sniffing through a switch
+
+
+1. Perform active sniffing
+
+
+PS: In active sniffing, ARP traffic is actively injected into a LAN to sniff around a switched network and capture its traffic. A packet sniffer can obtain all the information visible on the network and records it for future review.
+
+PS: The following is the list of different active sniffing techniques:
+
+- MAC Flooding: Involves flooding the CAM table with fake MAC address and IP pairs until it is full
+- DNS Poisoning: Involves tricking a DNS server into believing that it has received authentic information when, in reality, it has   not
+- ARP Poisoning: Involves constructing a large number of forged ARP request and reply packets to overload a switch
+- DHCP Attacks: Involves performing a DHCP starvation attack and a rogue DHCP server attack
+- Switch port stealing: Involves flooding the switch with forged gratuitous ARP packets with the target MAC address as the source
+- Spoofing Attack: Involves performing MAC spoofing, VLAN hopping, and STP attacks to steal sensitive information
+
+
+
+a. Perform MAC flooding using macof
+
+PS: Attackers use the MAC flooding technique to force a switch to act as a hub, so they can easily sniff the traffic.
+
+PS: macof is a Unix and Linux tool that is a part of the dsniff collection. It floods the local network with random MAC addresses and IP addresses, causing some switches to fail and open in repeating mode, thereby facilitating sniffing. This tool floods the switch’s CAM tables (131,000 per minute) by sending forged MAC entries. When the MAC table fills up, the switch converts to a hub-like operation where an attacker can monitor the data being broadcast.
+
+Step 1: Start Wireshark
+
+Step 2: Flood the Network using macof
+$ macof -i eth0 -n 10     (-i = interface, -n = number of packets to be sent)
+$ macof -i eth0 -d <IP>     (target a single system)
+
+
+
+
+
+
+b. Perform a DHCP starvation attack using Yersinia
+
+PS: Yersinia is a network tool designed to take advantage of weaknesses in different network protocols such as DHCP. It pretends to be a solid framework for analyzing and testing the deployed networks and systems.
+
+PS: In a DHCP starvation attack, an attacker floods the DHCP server by sending a large number of DHCP requests and uses all available IP addresses that the DHCP server can issue. As a result, the server cannot issue any more IP addresses, leading to a Denial-of-Service (DoS) attack. 
+
+Step 1: Start Wireshark
+
+Step 2: Start Yersinia
+$ yersinia -I   (Open Yersinia in interactive mode. -I = starts an interactive ncurses session)
+To remove the notification window, press any key
+Press "h" for help (show Available Commands)
+Press "q" to quit help options.
+Press F2 to select DHCP Mode
+Press "x" to list the available attack options  (1 = sending DISCOVER packet, performs the DHCP starvation attack)
+Press "1" to start DHCP starvation attack.
+Press "q" after a few seconds to stop the attack.
+
+Step 3: View Captured Packets on Wireshark 
+
+
+
+
+
+
+
+c. Perform ARP poisoning using arpspoof
+
+PS: A forged ARP request and reply packet find a place in the target ARP cache in this process. As the ARP reply has been forged, the destination computer (target) sends the frames to the attacker’s computer, where the attacker can modify them before sending them to the source machine (User A) in an MITM attack.
+
+Step 1: Start Wireshark
+
+Step 2: Tell Access Point/Gateway that Victim's IP is your IP
+$ arpspoof -i eth0 -t 10.10.1.1 10.10.1.11    (10.10.1.1 = AccesPoint/Gateway IP)
+Press Ctr+Z to stop sending ARP packets
+Observe Captured packets in Wireshark
+
+Step 3: Tell Victim that Access Point/Gateway IP is your IP
+$ arpspoof -i eth0 -t 10.10.1.11 10.10.1.1 
+Press Ctrl+Z to stop sending 
+View Wireshark
+
+
+
+
+d. Perform an Man-in-the-Middle (MITM) attack using Cain & Abel
+
+PS: Cain & Abel is a password recovery tool that allows the recovery of passwords by sniffing the network and cracking encrypted passwords. The ARP poisoning feature of the Cain & Abel tool involves sending free spoofed ARPs to the network’s host victims.
+
+Step 1: Host (Servr 19) - Open Cain and Discover the Hosts in the Subnet
+
+Search: Cain -> Configure (Configure the Menu Bar) -> Ok
+Start/Stop Sniffer -> Popup: Ok -> 
+Sniffer -> + Icon (or right-click in window and select Scan MAC Addresses) -> Check: All hosts in my subnet, All Tests -> Ok
+
+Step 2: Monitor Traffic b/w 2 Hosts (.11 and .22)
+
+APR (bottom of Window) -> Click anywhere on the topmost section in the right-hand pane to activate the plus (+) icon -> + Icon -> Select .11 left, .22 right -> Ok -> Select the created target IP -> Start/Stop APR (Start capturing) 
+
+Step 3: From .22, Make ftp connection to .11
+
+On .22 ,open cmd.exe
+$ ftp 10.10.1.11
+User: Jason
+Pwd: qwerty
+
+Step 4: View Captured Password
+On Host
+Passwords (bottom) -> FTP 
+
+
+
+
+
+
+
+e. Spoof a MAC address using TMAC and SMAC
+
+Windows 11
+
+TMAC
+
+Search -> TMAC -> No -> Random MAC Address -> Change Now
+Restore Original (To restore original MAC Address)
+
+SMAC
+
+Search -> SMAC -> I Accept -> Proceed -> Choose Nwk Adapter -> Random -> MAC List -> Load List -> Sample_MAC_Address_List.txt -> Open -> Choose any MAC -> Select -> Update MAC -> Yes -> Ok -> 
+
+
+
+
+
+
+f. Spoof a MAC address of Linux machine using macchanger
+
+Step 1: Turn Off the Network Interface
+$ ifconfig eth0 down 
+
+Step 2: Change MAC Address
+$ macchanger --help  (see available commands)
+$ macchanger -s eth0    (See current MAC Address) 
+$ macchanger -a eth0    (-a = Set a random vendor MAC Address to the Nwk Interface)
+$ macchanger -r eth0    (set a random MAC address to the nwk interface)
+
+Step 3: Turn On the Network Interface
+$ ifconfig eth0 up      (Turn on nwk interface)
+
+
+
+
+
+
+
+2. Perform network sniffing using various sniffing tools
+
+PS: Sniffing programs turn off the filter employed by Ethernet network interface cards (NICs) to prevent the host machine from seeing other stations’ traffic. Thus, sniffing programs can see everyone’s traffic.
+
+
+a. Perform password sniffing using Wireshark
+
+a.1: Capture Packet on Your (Local) Interface
+
+Step 1: Start Wireshark (Ethernet) on.19
+
+Step 2: From Victim (.11), Open a Website Hosted on Attacker Machine (.19)
+
+http://www.moviescope.com/
+Username: sam
+Pwd: test
+
+Step 3: View Captured Packets (.19)
+
+Stop Capture
+File -> Save As -> Desktop: Password Sniffing -> Save
+Apply a Display Filter: http.request.method == POST -->    (narrow search to http POST traffic)
+Edit -> Find Packet ->
+Display Filter: String
+Packet List: Packet Details
+Narrow & Wide: Narrow (UTF-8 /ASCII)
+pwd
+Find
+(Expand) HTML Form URL Encoded: application/x-www-form-urlencoded   (view the captured pwd)
+
+
+
+a.2: Capture Packets on a Remote Interface
+
+Step 1: Enable Remote Packet Capture
+
+Sign out of Admin on .11
+RDP to .11 from .19    Jason/qwerty
+Control Panel -> Systems and Security -> Windows Tools -> Services -> Remote Packet Capture Protocol v.0 (experimental) -> Right-click -> Start
+Close RDP
+
+Step 2: Start Wireshack and Set Capture to Remote Interface
+
+Launch Wireshack -> Capture Options -> Manage Interfaces -> Remote Interfaces -> (+ = Add a remote host and it's interface) -> 
+Host: 10.10.1.11
+Port: 2002
+Username: Jason
+Password: qwerty
+Ok -> Ok -> Start (Select Ethernet and rpcap)
+
+Step 3: Browse a Website from Victim Machine
+.11 -> Jason/qwerty-> http/www.goodshopping.com -> View Captured Packet on Wireshark
+
+
+
+
+
+
+
+
+b. Analyze a network using the Omnipeek Network Protocol Analyzer
+
+c. Analyze a network using the SteelCentral Packet Analyzer
+
+
+
+
+
+
+
+
+3. Detect network sniffing
+
+PS: Network sniffing involves using sniffer tools that enable the real-time monitoring and analysis of data packets flowing over computer networks. These network sniffers can be detected by using various techniques such as:
+
+Ping Method: Identifies if a system on the network is running in promiscuous mode
+
+DNS Method: Identifies sniffers in the network by analyzing the increase in network traffic
+
+ARP Method: Sends a non-broadcast ARP to all nodes in the network; a node on the network running in promiscuous mode will cache the local ARP address
+
+
+a. Detect ARP poisoning and promiscuous mode in a switch-based network
+
+a.1 Detect ARP Poisoning by Detecting Dublicate Address
+
+Step 1: Start Poisoning and Sniffing Packet Between .11 and .13
+
+.19 Launch Cain -> Configure -> Ok -> Start/Stop Sniffer -> Ok -> Sniffer -> + (or right-click Window and select Scan MAC Addresses) -> Check - Range: .1 to .30, All Tests -> Ok -> APR -> Click Anywhere -> + -> Add IPs to Monitor -> Ok -> Select Added IP -> Start/Stop APR 
+
+Step 2: Send Traffic b/w .13 and .11
+from.13
+$ hping3 10.10.1.11 -c 100000
+
+Step 3: View Duplicate IP, which is evidence of Poisoning/Sniffing
+.19 -> Wireshark -> Edit -> Preferences -> Expand Protocols Node -> ARP/RARP -> Check - Detect ARP request storms, Detect duplicate IP address config, Register nwk add mappings -> Ok -> Double-Click Ethernet -> Stop packet capture (after some time) -> Analyze -> Expert Information -> (Expand) Warning: Duplicate IP add config (.11)
+
+
+a.2 Detect Interface in Promiscuous Mode
+.11 -> Zenmap -> $ nmap --script=sniffer-detect 10.10.1.19 -> Scan 
+
+
+
+b. Detect ARP poisoning using the Capsa Network Analyzer
+
+Habu
+
+Habu is an open source penetration testing toolkit that can perform various tasks such as ARP poisoning, ARP sniffing, DHCP starvation and DHCP discovers.
+
+Here, we will use Habu tool to perform ARP poisoning attack on the target system and use Capsa Network Analyser to detect the attack.
+
+$ habu.arp.poison 10.10.1.11 10.10.1.13  (Note: The above command sends ARP 'is-at' packets to the specified victim(s), poisoning their ARP tables to send their traffic to the attacker system)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

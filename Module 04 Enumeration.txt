@@ -1,0 +1,327 @@
+Enumeration
+
+Gather lists of computers, usernames, user groups, ports, OSes, machine names, network resources, and services.
+
+Objectives
+
+- Machine names, their OSes, services, and ports
+- Network resources
+- Usernames and user groups
+- Lists of shares on individual hosts on the network
+- Policies and passwords
+- Routing tables
+- Audit and service settings
+- SNMP and FQDN details
+
+
+
+
+
+
+
+1. Perform NetBIOS enumeration
+
+https://www.lifewire.com/netbios-software-protocol-818229  NetBIOS
+
+
+a1. Perform NetBIOS enumeration using Windows command-line utilities
+
+Net use: connects a computer to, or disconnects it from, a shared resource. Info about computer connections
+Nbtstat: Enumerate NetBT protocol statistics, NetBIOS name tables (local and remote computers), NetBIOS name cache.
+
+$ nbtstat -n   (-n = display the NetBIOS table of a local machine)
+$ nbtstat -a 10.10.1.11  (-a = displays the NetBIOS name table of a remote computer)
+$ nbtstat -c   (-c = list the content of the remote computer NetBIOS name cache)
+
+$ net use  (displays connection status, shared folder/drive, nwk information)
+
+
+
+a2. Perform NetBIOS enumeration using Linux command-line utilities
+
+$ nmblookup -A 10.10.1.19
+$ nbtscan 192.168.1.0/24        (on a class C network)
+
+
+b. Perform NetBIOS enumeration using NetBIOS Enumerator
+
+Double-click "NetBIOS Enumerater.exe" -> IP Range to Scan (From - To)  [Ensure IP in 'To' field is up to .100 if its less, the tool may crash] -> Scan
+
+
+c. Perform NetBIOS enumeration using an NSE Script
+
+$ nmap -sV -v --script nbstat.nse 10.10.1.22 (-sV = Version, -v =verbose). [Display NetBIOS Name, User, MAC).
+$ nmap -sU -p 137 --script nbstat.nse 10.10.1.22 (-sU = UDP scan, -p=port)
+
+
+
+
+
+
+
+
+2. Perform SNMP enumeration
+
+a. Perform SNMP enumeration using snmp-check
+
+$ nmap -sU -p 161 10.10.1.22  (Check if SNMP port is open on the target)
+
+$ snmp-check 10.10.1.22   (shows system is used by the default "Public" community string. Displays sensitive information like "System Information" and "User Accounts").
+
+
+b. Perform SNMP enumeration using SoftPerfect Network Scanner
+
+Search -> Network Scanner -> Continue 
+Options -> Remote SNMP -> Mark All -> Close
+IPv4 From - To -> Start Scanning
+Right-Click an IP Address -> Properties (Displays Shared Resources, IP Address, MAC,Resp Time, Host Name, Uptime, System Descripton)
+Expand an IP -> View Shared folders
+Right-click an IP -> Open Device -> (Different Connect Options [HTTP, HTTPS, FTP, Telnet]. If system is not well secured, you can connect).
+
+
+c. Perform SNMP enumeration using SnmpWalk
+
+PS: It is issued to the root node so that the information from all the sub nodes such as routers and switches can be fetched.
+
+$ snmpwalk -v1 -c public 10.10.1.22  (-v = SNMP version [1 or 2c or 3], -c = sets a community string). (Displays all OIDs, variables and associated information). 
+$ snmpwalk -v2c -c public 10.10.1.22 
+
+
+d. Perform SNMP enumeration using Nmap
+
+$ nmap -sU -p 161 --script=snmp-sysdescr 10.10.1.22
+$ nmap -sU -p 161 --script=snmp-processes 10.10.1.22 (Displays list of SNMP running processes)
+$ nmap -sU -p 161 --script=snmp-win32-software 10.10.1.22 (Display list of ALL the application running on target)
+$ nmap -sU -p 161 --script=snmp-interfaces   (Displays OS, Nwk Interfaces, Installed Apps)
+
+
+
+
+
+
+
+
+
+3. Perform LDAP enumeration
+
+ PS : LDAP enumeration allows you to gather information about usernames, addresses, departmental details, server names, etc
+
+ PS : A client starts an LDAP session by connecting to a DSA (Directory System Agent), typically on TCP port 389, and sends an operation request to the DSA, which then responds. BER (Basic Encoding Rules) is used to transmit information between the client and the server.
+ 
+
+a. Perform LDAP enumeration using Active Directory Explorer (AD Explorer)
+
+Double-click ADExplorer.exe -> Agree -> Connect to Active Directory(Pop Up): Connet to (Target IP) -> Ok
+Expand -> Right-click an attribute -> Modify
+
+
+
+b. Perform LDAP enumeration using Python and Nmap
+
+$ nmap -sU -p 389 10.10.1.22   (verify that LDAP is open)
+$ nmap -p 389 --script ldap-brute --script-args ldap.base='"cn=users,dc=CEH,dc=com"' 10.10.1.22   (brute-force LDAP authentication and display the usernames)
+
+
+Mannual LDAP Neumeration Using Python
+
+$ python3
+>>> import ldap3  (Import LDAP)
+>>> server=ldap3.Server('10.10.1.22',get_info=ldap3.ALL,port=389)  (Connect to LDAP Server without credentials)
+>>> connection=ldap3.Connection(server)
+>>> connection.bind()
+True  =  connection established
+>>> server.info    (Displays the naming context [Schema and Configuration Partition])
+>>> connection.search(search_base='DC=CEH,DC=com',search_filter='(&(objectclass=*))',search_scope='SUBTREE',attributes='*')
+True
+>>> connection.entries  (Retrieve all the directory objects)
+>>> connection.search(search_base='DC=CEH,DC=com',search_filter='(&(objectclass=person))',search_scope='SUBTREE',attributes='userpassword')
+>>> connection.entries      (Dump the entire LDAP information)
+
+
+
+c. Perform LDAP enumeration using ldapsearch
+
+$ ldapsearch -h 10.10.1.22 -x -s base namigcontexts (get the naming contexts. -x = simple authentication, -h = host, -s = scope )
+$ ldapsearch -h 10.10.1.22 -x -b "DC=CEH,DC=com"    (more info about primary domain. -b = base DN for search)
+$ ldapsearch -x -h 10.10.1.22 -b "DC=CEH,DC=com" "objectclass=*"    (retrieve all objects in directory. Shows LDAP Version)
+
+
+
+
+
+
+
+4. Perform NFS enumeration
+
+https://www.youtube.com/watch?v=vpIZUDLYD5U
+
+https://www.youtube.com/watch?v=IwKey_7gxCE
+
+
+
+a. Perform NFS enumeration using RPCScan and SuperEnum
+
+Install/Enable NFS from Server Features and Services (via Server Manager)
+$ nmap -p 2049 10.10.1.19     (Confirm that NFS is open)
+
+
+Step 1: Enumerate NFS Using SuperEnum
+
+$ cd SuperEnum    (Navigate to SuperEnum Folder)
+$ echo "10.10.1.19" >> Target.txt  (create a file having a target machine's IP)
+$ ./superenum   
+Enter IP List filename with path: Target.txt    (Observer that port 2049 is open and nfs is running)
+
+Note: If you get an error running the ./superenum script, type chmod +x superenum and press Enter
+
+
+Step 2: Enumerate NFS Using RPCScan
+
+$ cd ..    (exit to root)
+$ cd RPCScan       (Let's perform NFS enumeration using RPCScan)
+$ python3 rpc-scan.py 10.10.1.19 --rpc 
+
+
+
+
+
+
+
+5. Perform DNS enumeration
+
+DNS enumeration can be performed using the following techniques:
+- Zone transfer
+- DNS cache snooping
+- DNSSEC zone walking
+
+
+a Perform DNS enumeration using zone transfer
+
+Linux
+$ dig ns www.certifiedhacker.com    (returns the name servers)
+$ dig @[NameServer] [Target Domain] axfr    (axfr = retrieves zone information). Try many dns name servers to see if they allow zone transfer.
+
+Windows
+$ nslookup
+> set querytype=soa  (Start of Authority)
+> certifiedhacker.com     (Domain. Retrieves the administrative information)
+> ls -d [NameServer]      (Request Zone Transfer. Here, NameServer = ns1.bluehost.com)
+
+
+
+
+
+b. Perform DNS Enumeration using DNSSEC Zone Walking
+
+PS: DNSSEC zone walking is a DNS enumeration technique that is used to obtain the internal records of the target DNS server if the DNS zone is not properly configured.
+DNSRecon = DNSSEC Zone Walking Tool 
+
+$ cd dnsrecon
+$ chmod +x ./dnsrecon.py
+$ ./dnsrecon.py -h     (view available options)
+$ ./dnsrecon.py -d www.certifiedhacker.com -z  (-d = domain, -z = perform DNSSEC zone walk with standard enumeration). Displays all DNS record.
+
+
+
+
+
+c. Perform DNS enumeration using Nmap
+
+$ nmap --script=broadcast-dns-service-discovery www.certifiedhacker.com (list of all services that use DNS in the target host with assoc ports).
+$ nmap -T4 -p 53 --script dns-brute certifiedhacker.com (-T4 = Timing template. Display list of subdomains associated with target host, with IP)
+$ nmap --script dns-srv-enum --script-args "dns-srv-enum.domain='certifiedhacker.com'" (Display common service [SRV] record)
+
+
+
+
+
+
+
+
+6. Perform SMTP Enumeration
+
+a. Perform SMTP enumeration using Nmap
+
+$ nmap -p 25 --script=smtp-enum-users 10.10.1.19 (list of all possible mail users in target)
+$ nmap -p 25 --script=smtp-open-relay 10.10.1.19 (Display a list of open SMTP relays on the target)
+
+An open mail relay is a Simple Mail Transfer Protocol server configured in such a way that it allows anyone on the Internet to send e-mail through it, not just mail destined to or originating from known users.
+
+$ nmap -p 25 --script=smtp-commands 10.10.1.19  (list SMTP commands available in the Nmap directory)
+
+
+
+
+
+
+7. Perform RPC, SMB, and FTP enumeration
+
+a. Perform SMB and RPC enumeration using NetScanTools Pro
+
+a1. Perform SMB Enumeration using NetScanTools Pro
+-Enable/Install NFS Service
+-Double-click and setup NetScanTools Pro Demo
+
+-Manual Tools -> SMB Scanner -> Start SMB Scanner (External App) -> Edit Target List -> Host Name(specify IP) -> Add to List  (add all target hosts) -> Ok
+-Edit Share Login Credentials -> Input Username and Pwd -> Add to List -> Ok 
+-Get SMB Versions   (Displays IP, NetBIOS Name, DNS Name, SMB Versions, )
+-Right-click any Machine - View Shares (Displays Share Name, Type, Remark, Path, Permissions, and Credentials Used).
+
+
+
+a2. Perform RPC Enumeration using NetScaleTools Pro
+-Mannual Tools -> *nix RPC Info -> Target Hostname or IP(Specify IP) -> Dump Portmap (Displays RPC Info)
+
+
+
+b. Perform RPC, SMB, and FTP enumeration using Nmap
+
+First Configure FTP Service in target machine
+-Create Folder in C:\ drive -> Go to IIS and Add ftp site -> Bind to 10.10.1.19 (server).
+
+$ nmap -p 21 10.10.1.19  (confirm ftp is open)
+$ nmap -T4 -A 10.10.1.19  (RPC = port 111, NFS = port 2049)
+$ nmap -p 21 -A 10.10.1.19  
+
+
+
+8. Perform enumeration using various enumeration tools
+
+
+a. Enumerate information using Global Network Inventory
+
+Search => gni (Global Nwk Inventory)
+Audit Scan Mode (Single Address)
+Connect as (Usname and Pwd) -> Finish
+Click the Different Outputs (OS, Users, Software,etc) to see detailed output
+
+
+
+
+b. Enumerate network resources using Advanced IP Scanner
+
+PS: The program shows all network devices, gives you access to shared folders, provides remote control of computers (via RDP and Radmin), and can even remotely switch computers off.
+
+Advanced IP Scanner -> Nwk Range (Put IP Range) -> Scan  (Shows Machine Names,IP, Manufacturer and MAC)
+Expand All (icon) (Display shared folders and services)
+Right-click an IP -> options
+
+
+c. Enumerate information from Windows and Samba hosts using Enum4linux
+
+$ enum4linux -h   (help)
+$ enum4linux -u martin -p apple -n 10.10.1.22  (Enumerate NetBIOS Information. Also users, SID, etc). 
+$ enum4linux -u martin -p apple -U 10.10.1.22  (-U = userlist. Lists the users in computer with their RID [Relative Identifiers]).
+$ enum4linux -u martin -p apple -o 10.10.1.22  (-o = OS information. )
+$ enum4linux -u martin -p apple -P 10.10.1.22   (-P = retrieves Password Policy)
+$ enum4linux -u martin -p apple -G 10.10.1.22   (-G = retrieves group policy and member list)
+$ enum4linux -u martin -p apple -S 10.10.1.22   (-S = retrieves share list)
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,333 @@
+1. Perform footprinting through search engines
+
+a. Gather information using advanced Google hacking techniques
+
+intitle:login (or careers, products, etc)
+site:xyz.com
+'Company' filetype:pdf 'topic'
+filetype:pdf 'topic' site:xyz.com
+cache:xyz.com
+allinurl: abc xyz qwerty  (every word contained in one url)
+inurl: 'word' site:xyz.com
+Anti-virus inanchor:Norton
+allinanchor: abc xyz qwerty 
+link:www.xyz.com  (search websites or webpages with links to xyz.com)
+related:www.xyz.com   (websites related to specified site)
+info:xyz.com  (pages that contain information about the specified site)
+location: 'Company'
+
+
+b. Gather information from video search engines
+
+mattw.io
+**https://mattw.io/youtube-metadata/**
+
+
+c. Gather information from FTP search engines
+
+NAPALMS Ftp Indexer
+https://www.searchftps.net/
+Type any Organization
+
+d. Gather information from IoT search engines
+
+https://www.shodan.io/
+
+2. Perform footprinting through web services
+
+a. Find the company’s domains and sub-domains using Netcraft
+
+https://www.netcraft.com
+
+$ sublist3r -d xyz.com
+https://pentest-tools.com
+
+b. Gather personal information using PeekYou online people search service
+
+https://www.peekyou.com
+https://pipl.com
+https://www.intelius.com
+https://www.beenverified.com
+
+
+c. Gather an email list using theHarvester
+
+$ theHarvester -d microsoft.com -l 200 -b baidu
+
+
+d. Gather information using deep and dark web searching
+
+$ torbrowser-launcher
+
+e. Determine target OS through passive footprinting
+
+https://search.censys.io/?q=      (Powerful OS Discovery)
+
+
+
+3. Perform footprinting through social networking sites
+
+a. Gather employees’ information from LinkedIn using theHarvester
+
+$ theHarvester -d eccouncil -l 200 -b linkedin 
+
+
+b. Gather personal information from various social networking sites using Sherlock
+
+$ cd sherlock/sherlock/       (Python script)
+$ python3 sherlock.py satya nadella
+$ python3 sherlock satya nadella
+
+
+c. Gather information using Followerwonk
+
+https://followerwonk.com/analyze
+
+
+
+4. Perform website footprinting
+
+a. Gather information about a target website using ping command line utility
+
+$ ping xyz.com -f -l 1500   (-f = don't fragment, -l = packet size)
+use this to discover maximum frame unit  (MTU) 
+$ ping xyz.com -i 3   (-i = TTL )
+$ ping xyz.com  -i 2  -n 1    (-n = number of echo requests to be sent to target)
+change TTL till you reach target (hop value)
+
+
+
+b. Gather information about a target website using Photon
+
+$ python3 photon.py -u https://www.certifiedhacker.com (result [external.txt, internal.txt and script.txt] are saved at folder www.certifiedhacker.com).
+$ python3 photon.py -u https://www.certifiedhacker.com/ --dns
+$ python3 photon.py -u https://www.certifiedhacker.com -l 3 -t 200 --waback
+$ python3 photon.py -u https://www.certifiedhacker.com --keys -t 10 -l 3 
+(-l = levels of urls to crawl, -t = number of threads)
+$ python3 photon.py -u https://www.certifiedhacker.com --keys -t 10 -l 3 --ninja
+(--ninja = hide IP/Identity)
+
+
+
+c. Gather information about a target website using Central Ops
+
+www.centralops.net 
+
+d. Extract a company’s data using Web Data Extractor
+
+E:\CEH-Tools\ ... Web Data Extractor    (install wde.exe)
+Launch Web Data Extractor
+New -> https://certifiedhacker.com  (Extract urls, phones, emails, meta tags, etc)
+
+
+
+e. Mirror a target website using HTTrack Web Site Copier
+
+Language (English) = Ok
+Next
+set options -> scan rules -> (check file extensions) -> ok
+
+
+
+f. Gather information about a target website using GRecon
+
+(gather domains, subdomains, login pages, directory listings, exposed docs, wordpress entries, etc)
+$ cd GRecon
+$ python3 grecon.py
+$ set target (site): certifiedhacker.com
+
+
+
+g. Gather a wordlist from the target website using CeWL
+
+$ cd      (jump to root)
+$ cewl -d 2 -m 5 www.certifiedhacker.com
+(-d = depth to spider, -m = minimum word length)
+$ cewl -w wordlist.txt -d 2 -m 5 www.certifiedhacker.com   (write the the wordlist output to file wordlist.txt)
+
+
+
+5. Perform email footprinting
+
+a. Gather information about a target by tracing emails using eMailTrackerPro
+
+E:\CEH-Tools\ ..... EmailTrackerPro     emt.exe
+File -> My Trace Reports -> Trace Headers -> Trace an Email I have received 
+
+
+6. Perform Whois footprinting
+
+a. Perform Whois lookup using DomainTools
+
+https://whois.domaintools.com   
+
+
+7. Perform DNS footprinting
+
+a. Gather DNS information using nslookup command line utility and online tool
+
+$ nslookup     (show your current network dns server and ip address)
+> set type=a
+> www.xyz.com   (will reveal [1] Your local dns server and ip, [2] IP of xyz.com as Non-Authoritative Answer)
+
+to obtain the Authoritative dns of xyz.com;
+
+> set type=cname
+> xyz.com       (domain name of xyz.com   [without the www])
+
+this will return 1. Your local dns details, 2. Details zone record of xyz.com (including primary name server, MX name server, zone records [serial, refresh, retry, expire, TTL])
+
+to get the actual ip of the name record;
+> set type=a
+> primary name server of xyz.com
+
+this will return 1. Your local dns server, 2. IP of xyz.com primary name server
+
+NSLOOKUP Online Tool
+
+http://www.kloth.net/services/nslookup.php
+
+
+b. Perform reverse DNS lookup using reverse IP domain check and DNSRecon
+
+Reverse DNS Lookup: Use a domain IP to find other domains/sites that share the same web server as the target domain.
+https://www.yougetsignal.com
+
+$ cd dnsrecon
+$ chmod +x ./dnsrecon.py
+$ ./dnsrecon.py -r 162.241.216.0-162.241.216.255
+
+
+c. Gather information of subdomain and DNS records using SecurityTrails
+
+SecurityTrails: Create a DNS map of the target domain network. 
+https://securitytrails.com/
+
+8. Perform network footprinting
+
+a. Locate the network range
+
+https://www.arin.net/about/welcome/region    (find network range and other host information)
+
+
+b. Perform network tracerouting in Windows and Linux Machines
+
+Windows
+$ tracert www.certifiedhacker.com
+$ tracert -h 5 www.certifiedhacker.com   (perform trace with only 5 maximum hops allowed)
+$ tracert /?   (help)
+
+Linux
+$ traceroute www.certifiedhacker.com
+
+
+9. Perform footprinting using various footprinting tools
+
+a. Footprinting a target using Recon-ng
+
+$ recon-ng
+> help       (view all allowed commands)
+> marketplace install all  (install all available modules)
+> modules search    (shows all the available modules)
+You can do network discovery, exploitation, recon, etc
+> workspaces    (displays commands related to workspaces)
+
+Create a Workspace called CEHP
+> workspaces create CEHP
+> workspaces list    (shows available workspaces)
+> db insert domains     (add domain you want to perform recon)
+domain (TEXT): certifiedhacker.com 
+notes (TEXT):                 (press enter)
+> show domains
+
+harvest host-related info associated with certifiedhacker  (load recon modules like brute_hosts, Netcraft, Bing)
+> modules load brute
+> modules load recon/domains-hosts/brute_hosts
+> run 
+
+To resolve hosts using bing module
+> modules load recon/domains-hosts/bing_domain_web
+
+perform reverse lookup for each IP to resolve to obtained hostname
+> back 
+> modules load reverse_resolve
+> modules load recon/hosts-hosts/reverse_resolve
+> run
+> show hosts
+> back 
+
+Prepare a report containing all the hosts
+
+> modules load reporting 
+> modules load reporting/html
+> options set FILENAME /home/kali/Desktop/results.html
+> options set CREATOR Nonso 
+> options set CUSTOMER Certifiedhacker Networks
+> run 
+
+Using Recon-ng to gather Personal Information
+
+$ recon-ng
+> workspaces create reconnaissance 
+> modules load recon/domains-contacts/whois_pocs  (uses the ARIN Whois RWS to harvest POC data from Whois queries for the given domain)
+> info command  (view the options required to run this module)
+> options set SOURCE facebook.com 
+> run    (extract contacts related to facebook.com on ARIN)
+
+> back
+> modules load recon/profiles-profiles/profiler (find existence of user-profile on various websites)
+> options set SOURCE MarkZuckerberg  (searches for this username and return the url [found with the matching username)
+> run 
+
+Use recon-ng to extract a list of subdomains and IP address associated with the target domain.
+
+$ recon-ng
+> module load recon/domains-hosts/hackertarget
+> options set SOURCE certifiedhacker.com
+> run
+
+
+b. Footprinting a target using Maltego
+
+Launch Maltego
+$ sudo maltego   (register CE with your email address)
+
+
+c. Footprinting a target using OSRFramework
+
+- set of libraries use for OSINT
+$ domainfy -n eccouncil -t all  (-n = nickname of domain, -t = top-level domains where nicknames will be searched)
+$ searchfy -q "Tim Cook"  (use searchfy to find existence of a usernames from different social media page like github)
+$ susfy
+$ mailfy
+$ phonefy
+$ entify 
+
+
+d. Footprinting a target using FOCA
+
+FOCA = Fingerprinting Organizations with Collected Archive
+
+Launch Foca.exe
+project -> new project   (create new project)
+
+
+e. Footprinting a target using BillCipher
+
+$ cd BillCipher
+$ python3 billcipher.py
+
+website or IP address: website
+enter website address: www.certifiedhacker.com
+
+etc
+
+f. Footprinting a target using OSINT Framework
+
+https://osintframework.com/
+
+
+
+
+
+https://iplocation.com/   Find location of a server/IP address

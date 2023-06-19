@@ -1,0 +1,229 @@
+Module 13: Hacking Web Servers
+
+
+
+
+
+
+
+1. Footprint the web server
+
+PS: There are also tools such as Whois.net and Whois Lookup that extract information such as the target’s domain name, IP address, and autonomous system number.
+
+
+
+
+a. Information gathering using Ghost Eye     (Everything DNS, CMS Technology used, IP Location [Long/Lat], etc. Start here for any external Domain Question)
+
+PS: Ghost Eye is an information-gathering tool written in Python 3. To run, Ghost Eye only needs a domain or IP. Ghost Eye can work with any Linux distros if they support Python 3.
+
+PS: Ghost Eye gathers information such as Whois lookup, DNS lookup, EtherApe, Nmap port scan, HTTP header grabber, Clickjacking test, Robots.txt scanner, Link grabber, IP location finder, and traceroute.
+
+$ cd ghost_eye
+$ pip3 install -r requirements.txt    (install requirents/dependencies)
+$ python3 ghost_eye.py   (launch Ghost Eye)
+> 3     (Whois Lookup)
+> certifiedhacker.com 
+
+> 2    (DNS Lookup)
+> certifiedhacker.com
+
+> 6   (Clickjacking Test)
+> certifiedhacker.com
+
+
+
+
+
+
+b. Perform web server reconnaissance using Skipfish    (INTERNAL web server. Shows the vulnerable url [SQL query or similar syntax] and detailed html trace)
+
+PS: Skipfish is an active web application (deployed on a webserver) security reconnaissance tool. It prepares an interactive sitemap for the targeted site by carrying out a recursive crawl and dictionary-based probes. The resulting map is then annotated with the output from a number of active (but hopefully non-disruptive) security checks.
+
+Step 1: Launch the WordPress Site running on WampServer in Server 2022 (.22)
+
+Start -> Wamperserver64 -> Wait till WAMP Server icon turns Green
+
+Step 2: Perform Security Reconnaissance on the Wordpress Website using Skipfish (.13)
+
+$ skipfish -o /home/attacker/test -S /usr/share/skipfish/dictionaries/complete.wl http://10.10.1.22:8080  (test = output directory name, complete.wl = Dictionary file/word list). 
+$ press any key
+
+Allow to run for 5mins, then press Ctrl+C 
+
+On receiving this command, Skipfish performs a heavy "brute-force attack" on the web server by using the "complete.wl" dictionary file, creates a directory named "test" in the root location, and stores the result in "index.html" inside this location.
+
+Step 3: Analyse the Output
+
+Places -> Home -> -> test -> right-click index.html -> Open with Firefox
+
+
+
+
+
+
+c. Footprint a web server using the httprecon Tool    (Get details [headers] of EXTERNAL web server)
+
+PS: httprecon is a tool for advanced web server fingerprinting. This tool performs banner-grabbing attacks, status code enumeration, and header ordering analysis on its target web server.
+
+Step 1: Launch httprecon tool (.11)
+
+E:\CEH-Tools\..\Web..\httprecon   right-click httprecon.exe -> Run as administrator
+Target: www.certifiedhacker.com , port:80 -> Analyze
+
+Step 2: analyze using the different buttons
+
+
+
+
+
+
+
+d. Footprint a web server using ID Serve     (EXTERNAL web Server. Quickly display the Web Server Name and Version)
+
+PS: ID Serve is a simple Internet server identification utility. Following is a list of its capabilities:
+
+i. HTTP server identification
+ii. Non-HTTP server identification
+iii. Reverse DNS lookup
+
+Step 1: Launch ID Serve
+
+E:\CEH-Tools\..\Web..\ID Serve   double-click idserve.exe
+
+Step 2: Querry a Server
+
+Enter or copy/paste .. URL..: http://www.certifiedhacker.com
+Query The Server
+
+
+
+
+e. Footprint a web server using Netcat and Telnet     (INTERNAL web server. Quickly show server details)
+
+PS: Netcat is a networking utility that reads and writes data across network connections, using the TCP/IP protocol.
+
+PS: Telnet helps users perform banner-grabbing attacks. It probes HTTP servers to determine the Server field in the HTTP response header.
+
+Both are used for Banner Grabbing. Information Displayed include;
+- Content-Type
+- Last-Modified
+- Accept-Ranges
+- ETag
+- Server
+- X-Powered-By
+- Date
+- Connection
+- Content-Length
+
+Step 1: Banner Grabbing Using Netcat
+
+$ nc -vv www.moviescope.com 80
+> GET / HTTP/1.0  (hit Enter twice)
+
+Step 2: Banner Grabbing Using Telnet
+
+$ telnet www.moviescope.com 80
+> GET / HTTP/1.0 
+
+
+
+
+
+f. Enumerate web server information using Nmap Scripting Engine (NSE)   (INTERNAL Sever. Directories, Resolver host name, HTTP Trace, and WAF Detect). 
+
+PS: The HTTP TRACE method is normally used to return the full HTTP request back to the requesting client for proxy-debugging purposes.
+
+PS: Nmap, along with Nmap Scripting Engine, can extract a lot of valuable information from the target web server. In addition to Nmap commands, Nmap Scripting Engine (NSE)provides scripts that reveal various useful information about the target web server to an attacker.
+
+$ nmap -sV --script=http-enum www.goodshopping.com    (enumerate the directories used by web servers and web applications, in the internalwindow)
+
+
+Find name of the DNS Server that resolves this Domain 
+$ nmap --script hostmap-bfk -script-args hostmap-bfk.prefix=hostmap- www.goodshopping.com  (discover the hostnames that resolve the targeted domain)
+
+$ nmap --script http-trace -d www.goodshopping.com  (perform HTTP trace on the target domain). 
+
+WAF Detect
+$ nmap -p80 --script http-waf-detect www.goodshopping.com  (check if WAF is configured on target. Probe the target host with malicious payloads and detect the changes in the response)
+
+
+
+
+
+
+
+g. Uniscan web server fingerprinting in Parrot Security     (INTERNAL server. Find web contents)
+
+PS: Uniscan is a versatile server fingerprinting tool that not only performs simple commands like ping, traceroute, and nslookup, but also does static, dynamic, and stress checks on a web server. Apart from scanning websites, uniscan also performs automated Bing and Google searches on provided IPs. Uniscan takes all of this data and combines them into a comprehensive report file for the user.
+
+Step 1: Launch Wordpress Site on Wamp Server (.22)
+
+Step 2: Perform Uniscan of the Wordpress Site (.13)
+
+$ uniscan -h   (Help)
+$ uniscan -u http://10.10.1.22:8080/CEH -q    (-u = target URL, -q = scan the directories)
+$ uniscan -u http://10.10.1.22:8080/CEH -we   (-w = enable file check, -e = enable robots.txt and sitemap.xml)
+$ uniscan -u http://10.10.1.22:8080/CEH -d    (-d = enable dynamic scan)
+
+Step 3: Analyze Scan Result
+
+Places -> Home -> File System -> usr -> share -> uniscan -> report -> right-click 10.10.1.22.html -> open with -> Firefox 
+
+
+
+
+
+2. Perform a web server attack
+
+PS: The attacker can also use automated tools such as Brutus and THC-Hydra, to crack web passwords.
+
+a. Crack FTP credentials using a Dictionary Attack
+
+PS: A dictionary or wordlist contains thousands of words that are used by password cracking tools to break into a password-protected system. 
+
+PS: First, find the open FTP port using Nmap, and then perform a dictionary attack using the THC Hydra tool.
+
+Step 1: Confirm FTP Port is open on target
+
+$ nmap -p 21 10.10.1.11
+
+Step 2: Check if FTP Server is hosted on the target machine
+
+$ ftp 10.10.1.11  (if you are requested for a credential, it means ftpserver is hosted).
+
+Step 3: Download the Wordlists Folder for Dictionary attack and place on Desktop
+
+Places -> Desktop -> CEHv12 Module 13... -> Wordlists:Copy -> Desktop:Paste
+
+Step 4: Perform Dictionary Atttack using the Wordlists
+
+$ hydra -L /home/attacker/Desktop/Wordlists/Usernames.txt -P /home/attacker/Desktop/Wordlists/Passwords.txt ftp://10.10.1.11
+
+Step 5: Use the cracked credentials to Gain Access 
+
+$ frp 10.10.1.11
+> username
+> pwd
+
+> mkdir Hacked
+> help
+> quit   (exit)
+
+> get filename.txt  (downloads file and stores in /home/attacker  directory of attacker machine)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

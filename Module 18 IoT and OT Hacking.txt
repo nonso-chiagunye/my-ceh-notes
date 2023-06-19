@@ -1,0 +1,208 @@
+Module 18: IoT and OT Hacking
+
+
+
+1. Perform footprinting using various footprinting techniques
+
+PS: The first step in IoT and OT device hacking is to extract information such as IP address, protocols used (MQTT, ModBus, ZigBee, BLE, 5G, IPv6LoWPAN, etc.), open ports, device type, geolocation of the device, manufacturing number, and manufacturer of the device.
+
+PS: Information collected through footprinting techniques includes IP address, hostname, ISP, device location, banner of the target IoT device, FCC ID information, certification granted to the device, etc.
+
+
+
+
+a. Gather information using online footprinting tools
+
+PS: MQTT protocol: is a machine-to-machine (M2M)/“Internet of Things” connectivity protocol. It is useful for connections with remote locations where a small code footprint is required and/or network bandwidth is at a premium.
+
+
+Step 1: Whois Lookup
+
+Firefox -> https://www.whois.com/whois/ -> www.oasis-open.org -> SEARCH 
+
+PS: Oasis is an organization that has published the MQTT v5.0 standard, which represents a significant leap in the refinement and capability of the messaging protocol that already powers IoT.
+
+
+Step 2: Google Hacking Database and Google Advanced Search
+
+Firefox -> https://www.exploit-db.com/google-hacking-database -> Quick Search: SCADA 
+New Tab -> https://www.google.com -> "login" intitle:"scada login" -> Google Search 
+Alternatively ->  intitle:"index of" scada (Search sensitive SCADA directories that are exposed on site)
+
+
+
+Step 3: Shodan IoT Search Engine
+
+New Tab -> https://account.shodan.io/login -> (Login or go to 'Register' to register) -> port:1883 (Port 1883 is the default MQTT port. Defined by IANA as MQTT over TCP) 
+
+Other Information that can be gathered from Shodan.io
+
+- Search for Modbus-enabled ICS/SCADA systems:
+
+port:502
+
+- Search for SCADA systems using PLC name:
+
+“Schneider Electric”
+
+- Search for SCADA systems using geolocation:
+
+SCADA Country:"US"
+
+
+
+
+
+
+
+2. Capture and analyze IoT device traffic
+
+a. Capture and analyze IoT traffic using Wireshark
+
+PS: We can create virtual IoT devices over the virtual network using the Bevywise IoT simulator on the client side and communicate these devices to the server using the MQTT Broker web interface. 
+
+
+Step 1: Install MQTT Broker/Server (.19)
+
+Z:\CEH-Tools\..\Bevywise IoT..\  Bevywise_MQTTRoute_Win_64.exe -> Run -> I Accept -> Next -> Next -> Install -> Finish
+allow it running
+
+Step 2: Install IoT Simulator on Client Machine (.22)
+
+Z:\CEH-Tools\..\Bevywise IoT..\  Bevywise_IoTSimulator_Win_64.exe -> Run -> I Accept -> Next -> Next -> Install -> Finish 
+
+Step 3: Create a Virtual Network on the Simulator
+
+C:\Bevywise\IotSimulator\bin runsimulator.bat -> Ho do you want to open this?: Microsoft Edge -> Ok
+Menu -> + New network -> Name: CEH_FINANCE_NETWORK -> Description: CEH... -> Create 
+Simulator Settings: Broker IP: 10.10.1.19 -> Leave others default -> Save -> Yes 
+
+Step 4: Add Devices to the Created Network
+
+Add Blank Device -> Device Name: Temperature_Sensor -> Device ID: TS1 -> Description: This is a Temperature sensor -> Save
+
+Step 5: Connect the Network and Added Device to the Server/Broker
+
+Start Network -> (It turns from red to green when a connection is established)
+
+Step 6: Create the 'Subscribe to Command' for the Temperature_Sensor Device
+
++ -> Subscribe to Command -> Subscribe on: On start -> Topic: High_Tempe -> Qos: 1 Atleast once -> Save 
+
+Step 7: Capture the traffic between the Virtual IoT Network and the MQTT Broker using Wireshark
+
+Minimize the Edge Browser -> Launch Wireshark -> Ethernet 
+
+Step 8: Send a Command from the Server/Broker to the TS1 Device Using the High_Tempe Topic
+
+Switch to .22 (Broker) -> Launch Chrome -> http://localhost:8080 -> SIGN IN (Keep default credentials) -> Devices -> TS1 -> Topic: High_Tempe -> Message: Alert for High Temperature -> Send -> Ok
+Switch to Simulator, you will see the message under 'Device Log'.
+
+Step 9: Analyse the Communication In Wireshark
+
+Filter: mqtt (display only the MQTT protocol packets)
+
+
+- Publish Message
+Expand Transmission Control Protocol, Mq Telemetry Transport Protocol, and Header Flags nodes
+Under MQ Telemetry Transport Protocol nodes, observe Msg Len, Topic Length, Topic, and Message
+NB: Publish Message can be used to obtain the message sent by the MQTT client to the broker.
+
+The headers in the Publish Message packet are given below:
+
+- Header Flags: Contains information regarding the MQTT control packet type.
+- DUP flag: If the DUP flag is 0, it indicates the first attempt at sending this PUBLISH packet; if the flag is 1, it indicates a   possible re-attempt at sending the message.
+- QoS: Determines the assurance level of a message.
+- Retain Flag: If the retain flag is set to 1, the server must store the message and its QoS, so it can cater to future subscriptions   matching the topic.
+- Topic Name: Contains a UTF-8 string that can also include forward slashes when it needs to be hierarchically structured.
+- Message: Contains the actual data to be transmitted.
+- Payload: Contains the message that is being published.
+
+
+- Publish Release
+Expand Transmission Control Protocol, Mq Telemetry Transport Protocol, and Header Flags nodes
+Under MQ Telemetry Transport Protocol nodes, you can observe details such as Msg Len, Message Type, Message Identifier. 
+PS: A Publish Release (PUBREL) packet is the response to a Publish Received (PUBREC) packet.
+
+
+- Publish Complete
+Expand Transmission Control Protocol, Mq Telemetry Transport Protocol, and Header Flags nodes
+Under the MQ Telemetry Transport Protocol nodes, you can observe details such as Msg Len and Message Identifier.
+PS: The Publish Complete (PUBCOMP) packet is the response to a Publish Release (PUBREL) packet.
+
+
+- Publish Received
+Expand Transmission Control Protocol, Mq Telemetry Transport Protocol, and Header Flags nodes
+Under the MQ Telemetry Transport Protocol nodes, you can observe details such as Message Type, Msg Len and Message Identifier.
+
+
+
+
+
+
+Similarly you can select Ping Request, Ping Response and Publish Ack packets and observe the details.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

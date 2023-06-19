@@ -1,0 +1,327 @@
+Module 20: Cryptography
+
+
+
+
+1. Encrypt the information using various cryptography tools
+
+
+a. Calculate one-way hashes using HashCalc
+
+PS: HashCalc enables you to compute multiple hashes, checksums, and HMACs for files, text, and hex strings.
+
+Search -> HashCalc -> Data Format: File -> Data: ellipsis -> navigate to file -> open -> Check Appropriate Hashes -> Calculate
+
+
+
+
+
+b. Calculate MD5 hashes using MD5 Calculator
+
+Search -> MD5 Calculator -> Open -> Add Files -> navigate to file -> Open -> Calculate
+Copy (hash) -> Remove Files -> Add Files (modified file) -> Calculate -> Paste previous hash -> Compare 
+
+
+
+
+c. Calculate MD5 hashes using HashMyFiles (Add Folder)
+
+E:\CEH-Tools\CEHv12..\MD5 and MD6..\HashMyFiles  HashmyFiles.exe -> Run -> Files -> Add Folder -> Select Folder: Elipsis -> navigate to folder -> Open -> Ok
+Options -> Hash Types -> (Unselect the ones not needed) -> Refresh 
+
+
+
+
+
+d. Perform file and text message encryption using CryptoForge
+
+Step 1a: Encrypt File (.11)
+
+E:\CEH-Tools\CEHv12..\Cryptographic Tools\CryptoForge -> Right-click Confidential.txt -> Show More options -> Encrypt -> Passphrase: qwerty@1234 -> Confirm: qwerty@1234 -> Ok 
+
+Step 1b: Decrypt File from another computer (.19)
+
+Z:\CEHv12..\CryptoForge -> double-click Confidential.cfe -> Passphrase: qwerty@1234 -> Ok -> Double-click the decrypted file.
+
+
+Step 2a: Encrypt a Message (.19)
+
+Search -> CryptoForge Text -> Type a message -> Encrypt -> Passphrase: test@123 -> Confirm: test@123 -> Ok -> File -> Save -> Save As: Z:\CEHv12..\CryptoForge  SecretMessage.cfd -> Save 
+
+Step 2b: Decrypt the Message (.11)
+
+E:\CEH-Tools\..CryptoForge  double-click SecretMessage.cfd -> Decrypt -> Passphrase: test@123 -> Ok 
+
+
+
+
+
+
+e. Encrypt and Decrypt data using BCTextEncoder
+
+PS: BCTextEncoder simplifies encoding and decoding text data. Plain text data are compressed, encrypted, and converted to text format, which can then be easily copied to the clipboard or saved as a text file. This utility software uses public key encryption methods and password-based encryption, as well as strong and approved symmetric and public key algorithms for data encryption.
+
+Step 1: Encode Text  (.11)
+
+E:\..BDTextEncoder  -> double-click BCTextEncoder.exe -> Insert or Paste Text -> Encode by: password -> Encode -> Password/Confirm: test@123 -> Ok 
+
+Step 2: Decode Text
+
+Clean the plain text -> Decode -> Password: test@123 -> Ok 
+
+
+
+
+
+
+
+2. Create a self-signed certificate
+
+PS: In cryptography and computer security, a self-signed certificate is an identity certificate signed by the same entity whose identity it verifies.
+
+
+
+a. Create and use self-signed certificates
+
+PS: In self-signed certificates, a user creates a pair of public and private keys using a certificate creation tool such as Adobe Acrobat Reader, Java’s keytool, Apple’s Keychain, etc. and signs the document with the public key. 
+
+Step 1: Create Server Certificate (.19)
+
+Check if the site includes certificate -> chrome -> https://www.goodshopping.com  (site can't be reached)
+
+Search -> IIS -> Launch Internet Information Services (IIS) Manager -> (SERVER2019 (SERVER2019\Administrator)) -> double-click Server Certificates -> Create Self-Signed Certificate -> Name: GoodShopping -> Certificate Store: Personal -> Ok 
+
+Step 2: Bind the Certificate to a Domain
+
+Expand Sites -> GoodShopping -> Bindings -> Add -> Type: https -> Port: 443 -> IP: 10.10.1.19 -> Host name: www.goodshopping.com -> SSL Certificate: GoodShopping -> Ok -> Close -> Right-click the site (GoodShopping) -> Refresh
+
+Step 3: Test the Certificate
+
+Chrome -> https://www.goodshopping.com -> ADVANCED -> Proceed (unsafe)
+
+
+
+
+3. Perform email encryption
+
+a. Perform email encryption using RMail
+
+
+
+
+
+4. Perform disk encryption
+
+a. Perform disk encryption using VeraCrypt
+
+PS: VeraCrypt is a software used for establishing and maintaining an on-the-fly-encrypted volume (data storage device).
+
+PS: On-the-fly encryption means that data is automatically encrypted just before it is saved, and decrypted just after it is loaded, without any user intervention. 
+
+PS: No data stored on an encrypted volume can be read (decrypted) without using the correct password/keyfile(s) or correct encryption keys. The entire file system is encrypted (e.g., file names, folder names, free space, metadata, etc.).
+
+
+Step 1: Launch VeraCrypt and Create an Encrypted Volume
+
+Search -> VeraCrypt -> Open -> Create Volume -> Check: Create an encrypted file container -> Next -> Volume Type: Leave default -> Next -> Volume Location: Select File -> Navigate to Desktop -> File Name: MyVolume -> Save -> Next -> Encryption Option: Leave Default -> Next -> Volume Size: 5MB -> Next -> Volume Password: password/confirm: qwerty@123 -> Next -> Filesystem: FAT -> Cluster: Default -> Check: Random Pool, Header Key, Master key -> (Move your mouse as randomly as possible within the Volume Creation Wizard window for at least 30 seconds) -> Format -> Ok -> Exit 
+
+Step 2: Mount the Encrypted Volume
+
+Veracrypt main Window (select a volume [I]) -> Select File -> Navigate to Desktop -> MyVolume -> Open -> Mount -> Password: qwerty@123 -> Ok 
+
+Step 3: Test the Virtual Disk
+
+Create a file on Desktop -> Test -> Type some texts -> save -> Copy and Paste in Local Disk (I) -> Close Window 
+
+Step 4: Dismount Disk
+
+Veracrypt -> Dismount -> Exit
+
+
+
+
+
+
+b. Perform disk encryption using BitLocker Drive Encryption
+
+Search -> Manage Bitlocker -> Open -> New Volume (E:) Bitlocker off -> Turn on Bitlocker (Under New Volume (E:)..) -> Check: Use a password to unlock the drive -> password/retype: test@123 -> Next -> Save to a file -> Save Bitlocker recovery key as :Location: This PC  Documents -> Save -> Encrypt entire drive..-> Next -> Compatible mode... -> Next -> Start Encrypting -> Close -> Restart
+
+After restart
+
+File Explorer -> This PC (Local Disk (E:) is encrypted -> double-click (put password) 
+
+To turn it off
+Control Panel -> System and security -> Bitlocker Drive Encryption -> New Volume (E:) Bitlocker on -> Turn off Bitlocker
+
+
+
+
+
+
+c. Perform disk encryption using Rohos Disk Encryption
+
+PS: Rohos Disk Encryption creates hidden and password-protected partitions on a computer or USB flash drive, and password protects/locks access to your Internet applications.
+
+PS: It uses a NIST-approved AES encryption algorithm with a 256-bit encryption key length. Encryption is automatic and on-the-fly.
+
+Step 1: Install Rohos Disk Encryption
+
+E:\CEH-Tools\..\Rohos Disk Enc..  double-click rohos.exe -> Ok -> Next -> Finish
+
+Step 2: Create New Disk
+
+Create new disk -> Change -> Disk Size: 10Mb, File Type: NTFS, Algorythm: AES256 -> Ok -> password/confirm: test@123 -> Create disk
+
+Step 3: Conceal a File in the Encrypted Disk
+
+Create a file on Desktop (Test.txt) -> Insert some text -> Copy and paste in encrypted disk -> switch to Rohos disk Encryption -> Disconnect
+
+Step 4: Mount the Disk again
+
+Launch Rohos Disk Encryption -> Connect disk -> Enter password -> Ok -> Browse (explore the disk content)
+
+
+
+
+
+
+5. Perform cryptanalysis using various cryptanalysis tools
+
+
+a. Perform cryptanalysis using CrypTool
+
+Step 1: Encrypt File with RC2
+
+Search -> CrypTool -> Open -> Don't show again: close -> close the startingexample-en.txt window -> File -> New -> Insert some texts -> Encrypt/Decrypt -> Symmetric (modern) -> RC2 -> Key length: 8 bits -> Hexadecimal xter: 05 -> Encrypt 
+
+PS: The chosen hexadecimal character acts as a key that you must send to the intended user along with the encrypted file.
+
+Step 2: Save and Share File
+
+File -> Save -> Location: Desktop -> Save-> Copy and paste in Share Drive. 
+
+Step 3: Decrypt File (.19)
+
+navigate to shred file -> copy and paste on Desktop -> Search -> CrypTool -> File -> Open -> Navigate to file in desktop -> File Type: All files -> Open -> Encrypt/Decrypt -> Symmetric (modern) -> RC2 -> Key length: 8bits -> Hexadecimal Xter: 05 -> Decrypt 
+
+
+Repeat same process for Triple DES Encryption
+Key Length: 128 bits (effectively 112 bits)
+Hexadecimal Character: combination of 12
+
+
+
+
+
+b. Perform cryptanalysis using AlphaPeeler
+
+Step 1: Encrypt File With DES  (.11)
+
+Create a file 'Test'on Desktop 
+Search -> AlphaPeeler -> Open -> Professional Crypto -> DES Crypto -> Plain text file: Navigate to 'Test' -> open -> Cypher text file : Navigate to network share (where you want to save file) -> Confidential.txt (name of encrypted file) -> Open -> Pass phrase: test@123 -> Encrypt (DES-EDE (CBC)
+
+Step 2: Decrypt File (.19)
+
+Search -> AlphaPeeler -> Open -> File -> Open -> navigate to share/Confidential.txt -> Open (text is encrypted)
+Professional crypto -> DES crypto -> Plain text file (choose where to decrypt file and new file name) -> Desktop/Result.txt -> Open -> Cypher text file (navigate to Share/Confidential.txt) -> open -> Pass phrase: test@123 -> Decrypt: DES-EDE (CBC)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

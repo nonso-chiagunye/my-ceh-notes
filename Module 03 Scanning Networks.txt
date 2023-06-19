@@ -1,0 +1,289 @@
+1. Perform host discovery
+
+Host discovery techniques egs;
+. ARP ping scan
+. UDP ping scan
+. ICMP ping scan (ICMP ECHO ping, ICMP timestamp, ping ICMP, and address mask ping)
+. TCP ping scan (TCP SYN ping and TCP ACK ping)
+. IP protocol ping scan
+
+a. Perform host discovery using Nmap
+
+$ nmap -sn -PR <IP>  (-sn = disables port scan, -PR = ARP Ping scan)
+$ nmap -sn -PU <IP>   (-PU = UDP scan. If host is offline, error response: "host/nwk unreachable" or "TTL exceeded")
+$ nmap -sn -PE <IP>   (-PE = ICMP ECHO Ping scan. Good to determine if ICMP is passing through the firewall)
+
+$ nmap -sn -PE 10.10.1.10-23 (ICMP ECHO ping Sweep. Determine live hosts from a range of IPs).
+
+$ nmap -sn -PP <IP>    (-PP = ICMP Timestamp ping.)
+
+$ nmap -sn -PM <IP>   (ICMP Address Mask Ping Scan. Used when Admins block ICMP ECHO pings)
+
+$ nmap -sn -PS <IP>   (TCP SYN Ping Scan. Sends empty TCP SYN Packets. ACK response = host active)
+$ nmap -sn -PA <IP>   (TCP ACK Ping Scan. Sends empty TCP ACK packets. RST response = host is active)
+$ nmap -sn -PO <IP>  (IP Protocol Ping Scan. Send s diff packets of diff IP protocols to target host. any response from any probe = host is active)
+
+
+b. Perform host discovery using Angry IP Scanner
+
+Angry IP Scanner -> set IP Range -> Set Preferences (Incl Display)
+
+
+
+2. Perform port and service discovery
+
+Protocols Used;
+
+. TCP Scanning
+	- Open TCP scanning methods (TCP connect/full open scan)
+	- Stealth TCP scanning methods (Half-open Scan, Inverse TCP Flag Scan, ACK flag probe scan, third party and spoofed TCP scanning methods)
+. UDP Scanning
+. SCTP Scanning
+	- SCTP INIT Scanning
+	- SCTP COOKIE/ECHO Scanning
+. SSDP and List Scanning
+. IPv6 Scanning
+
+
+a. Perform Port and Service discovery using MegaPing
+
+Install -> I Agree -> IP Scanner
+Port Scanner -> Destination Address List(10.10.1.22) -> Add -> Check (added host)-> Start -> Displays Port numbers with description, risk.
+
+
+
+b. Perform Port and Service discovery using NetScanTools Pro
+
+Install -> Start the DEMO -> Start NetScanTools Pro Demo
+Manual Tools(All) -> Ping Scanner
+Start IP <-> End IP  (Use Defult System DNS) -> Start -> I accept -> (View with Google Chrome)
+
+Manual Tools (All) -> Port Scanner -> Target Hostname or IP (10.10.1.22) -> Check TCP Full Connect -> Scan Range of Ports
+
+
+c. Perform port scanning using sx tool
+
+Command-Line network Scanner
+$ sx arp 10.10.1.0/24  (discovery connected IPs with their MAC. arp = ARP scan)
+$ sx arp 10.10.1.0/24 --json  (converts the text file to JSON format)
+$ sx arp 10.10.1.0/24 --json | tee arp.cache (writes the data to stdin with name arp.cache)
+
+$ cat arp.cache | sx tcp -p 1-65535 10.10.1.11  (perform a tcp port scan over the range 1-65535. Displays all open ports).
+$ cat arp.cache | sx udp --json -p 53 10.10.1.11 (UDP Scan. "icmp" : {"type" :3, "code":3)
+
+NB: In a UDP scan, sx returns the IP address, ICMP packet type and code set to the reply packet.
+Destination Unreachable Codes
+0 = Network Unreachable
+1 = Host Unreachable
+2 = Protocol Unreachable
+3 = Port Unreachable 
+
+$ cat arp.cache | sx udp --json -p 500 10.10.1.11 (No code returned, means target port is open)
+
+
+
+
+d. Explore various network scanning techniques using Nmap
+
+$ nmap -sT -v 10.10.1.22    (-sT = TCP Connection/Full Open scan, -v enables verbose output [Include all hosts and ports in the output])
+
+
+Perform Different (Stealth) Scans on a Firewall-enabled Machine
+Eable firewall
+Control Panel -> System and Security -> Windows Defender Firewall -> Turn Windows Def Fwl on or off
+
+$ nmap -sS -v 10.10.1.22  (-sS = stealth scan/TCP half-open scan) SYN->SYN ACK->RST
+$ nmap -sX -v 10.10.1.22   (-sX = TCP Xmas scan)
+Port Open | filtered   means firewall is configured on target.
+
+Note: Xmas scan sends a TCP frame to a target system with FIN, URG, and PUSH flags set. If the target has opened the port, then you will receive no response from the target system. If the target has closed the port, then you will receive a target system reply with an RST.
+
+$ nmap -sM -v 10.10.1.22   (-sM = TCP Maimon scan)
+Note: In the TCP Maimon scan, a FIN/ACK probe is sent to the target; if there is no response, then the port is Open|Filtered, but if the RST packet is sent as a response, then the port is closed
+
+$ nmap -sA -v 10.10.1.22   (-sA = ACK flag probe)
+Note: The ACK flag probe scan sends an ACK probe packet with a random sequence number; no response implies that the port is filtered (stateful firewall is present), and an RST response means that the port is not filtered.
+
+
+
+
+$ nmap -sU -v 10.10.1.22  (-sU = UDP scan. Displays all open UDP ports.)
+Note: There is no three-way handshake for the UDP scan. It sends UDP packets to the target host; no response means that the port is open. If the port is closed, an ICMP port unreachable message is received.
+
+$ nmap -sN -T4 -A -v 10.10.1.9  (-sN = Null Scan -> empty flag. -T4 = Aggressive Timing Template. -A = Aggressive scan)
+
+$ nmap -sI -v 10.10.1.22   (-sI = IDLE/IPID Header Scan. Used to send a spoof address).
+
+$ nmap -sY -v 10.10.1.22  (-sY = SCTP INIT Scan. an INIT chunk is sent, an INIT + ACK chunk response = port is open, an ABORT response = closed)
+
+$ nmap -sZ -v 10.10.1.22  (-sZ = SCTP COOKIE ECHO Scan. No response = port open, ABORT chunk response = port closed)
+
+$ nmap -sV 10.10.1.22  (-sV = version scan)
+
+$ nmap -A 10.10.1.*  (-A = Aggressive scan [-O OS detection, -sV Version scan, -sC script scanning, --traceroute traceroute]. * wildcard = scan whole nwk)
+
+
+
+
+
+
+e. Explore various network scanning techniques using Hping3
+
+$ hping3 -A 10.10.1.22 -p 80 -c 5  (-A = set ACK flag, -p = port, -c packet count)
+
+Note: The ACK scan sends an ACK probe packet to the target host; no response means that the port is filtered. If an RST response returns, this means that the port is closed
+
+$ hping3 -8 0-100 -S 10.10.1.22 -V   (-8 = scan type, 0-100 = range of ports, -V = verbose)
+a response =port open. RST = port closed.
+
+$ hping3 -F -P -U 10.10.1.22 -p 22 -c 4  (-F = FIN, -P = PUSH, -U = URG)
+SYN + ACK  (S...A....) = port open.
+
+$ hping3 --scan 0-100 -S 192.168.12.129 
+SYN + ACK (S..A..) = port open. 
+
+$ hping3 -1 192.168.12.129 -p 21 -c 5
+
+$ hping3 -2 [Target IP Address] -p 80 -c 5 (UDP Scan)
+
+
+
+3. Perform OS discovery
+
+S/N    OS          TTL            Win Size
+1.    Linux        64             5840
+2.    Windows      128            65535 byte to 1GB
+3.    FreeBSD      64             65535
+4.    OpenBSD      255            16384
+5.    Cisco Router 255            4128
+6.    Solaris      255            8760
+7.    AIX          255            16384
+
+
+
+a. Identify the target system’s OS with Time-to-Live (TTL) and TCP window sizes using Wireshark
+
+Internet Protocol Version 4 -> TTL
+
+
+
+
+
+b. Perform OS discovery using Nmap Script Engine (NSE)
+
+$ nmap -A 10.10.1.22  (-A = Aggresive scan - OS, version, NETBIOS, etc)
+$ nmap -O 10.10.1.22  (-O = OS Dicovery)
+$ nmap --script smb-os-discovery.nse 10.10.1.22 ( Shows open ports and services; with OS, Computer name, NetBIOS name, Domain name, Forest name, FQDN, System time)
+
+
+
+
+c. Perform OS discovery using Unicornscan
+
+$ unicornscan 10.10.1.22 -Iv (Shows open ports, service and TTL values)
+I = Immediate, v = verbose
+
+
+
+
+
+4. Scan beyond IDS and Firewall
+
+Techniques for Evading Firewalls and IDS 
+
+- Packet Fragmentation: Send fragmented probe packets to the intended target, which re-assembles it after receiving all the fragments
+- Source Routing: Specifies the routing path for the malformed packet to reach the intended target
+- Source Port Manipulation: Manipulate the actual source port with the common source port to evade IDS/firewall
+- IP Address Decoy: Generate or manually specify IP addresses of the decoys so that the IDS/firewall cannot determine the actual IP address
+- IP Address Spoofing: Change source IP addresses so that the attack appears to be coming in as someone else
+- Creating Custom Packets: Send custom packets to scan the intended target beyond the firewalls
+- Randomizing Host Order: Scan the number of hosts in the target network in a random order to scan the intended target that is lying beyond the firewall
+- Sending Bad Checksums: Send the packets with bad or bogus TCP/UPD checksums to the intended target
+- Proxy Servers: Use a chain of proxy servers to hide the actual source of a scan and evade certain IDS/firewall restrictions
+- Anonymizers: Use anonymizers that allow them to bypass Internet censors and evade certain IDS and firewall rules
+
+
+
+
+
+a. Scan beyond IDS/firewall using various evasion techniques
+
+$ nmap -f 10.10.1.11  (-f = fragment packets)
+$ nmap -g 80 10.10.1.11  (-g = specify source port) or
+$ nmap --source-port 80 10.10.1.11 
+$ nmap -mtu 8 10.10.1.11  (-mtu = Maximum Transmission Unit. Using smaller values evade Firewalls)
+$ nmap -D RND:10 10.10.1.11  (-D = Decoy scan, RND = generates a randomand non-reserved IPs - the actual source IP is sandwitched in-between fake/randomly-generated source IPs)
+$ nmap -sT -Pn --spoof-mac 0 10.10.1.11 (-sT = TCP full connect, -Pn = skip host discovery, --spoof-mac 0 = randomize MAC address)
+
+
+
+
+b. Create custom packets using Colasoft Packet Builder to scan beyond the IDS/firewall
+
+Adapter -> Ok (after checking adapter settings)
+To add or Create Packet
+Add -> ARP Packet -> Delta Time:0.1 -> Ok
+Colasoft allows to edit decoding info in "Decode Editor (packet decoding info)" and "Hex Editor"
+To send the packet;
+Send -> Burst Mode (no delay b/w packets) -> Start. after progress bar completes: Close
+
+In Wireshack Filter: arp (Enter)
+To export the Packet;
+Export -> Selected Packet -> File Name
+
+
+
+c. Create custom UDP and TCP packets using Hping3 to scan beyond the IDS/firewall
+
+TCL = Tool Command Language.
+
+$ hping3 10.10.1.11 --udp --rand-source --data 500
+$ hping3 -S 10.10.1.11 -p 80 -c 5  (-S = SYN request, -p = specifies port to send d traffic dst, -c packet count)
+$ hping3 10.10.1.11 --flood  (TCP Flooding)
+
+
+
+5. Perform network scanning using various scanning tools
+
+a Scan a target network using Metasploit
+
+$ service postgresql start
+$ msfconsole
+> db_status       (postgresql selected, no connection = means db did not connect to msf).
+> exit
+$ msfdb init  (Initiate the database)
+$ service postgresql restart (restart postgresql)
+$ msfconsole  (start metasploit again)
+> db_status  (check db connection again)
+
+> nmap -Pn -sS -A -oX Test 10.10.1.0/24
+> db_import Test 
+> hosts
+> services 
+
+> search portscan
+> use auxiliary/scanner/portscan/syn  (to perform SYN scan)
+> set INTERFACE eth0
+> set PORTS 80
+> set RHOSTS 10.10.1.5-23
+> set THREADS 50
+> run
+
+> use auxiliary/scanner/portscan/tcp  (to perform TCP scan)
+> set RHOSTS 10.10.1.22
+> run
+
+> back
+> use auxiliary/scanner/smb/smb_version (since some systems have open port 445, we determine Window version and Linux Samba version)
+> set RHOSTS 10.10.1.5-23
+> set THREADS 11
+> run   (displays the OS details of the hosts)
+
+
+
+
+
+
+
+
+

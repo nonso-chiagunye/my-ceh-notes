@@ -1,0 +1,74 @@
+Module 09: Social Engineering
+
+1. Perform social engineering using various techniques
+
+PS: There are three types of social engineering attacks: human-, computer-, and mobile-based.
+
+- Human-based social engineering uses interaction to gather sensitive information, employing techniques such as impersonation,   vishing, and eavesdropping
+- Computer-based social engineering uses computers to extract sensitive information, employing techniques such as phishing,   spamming, and instant messaging
+- Mobile-based social engineering uses mobile applications to obtain information, employing techniques such as publishing malicious   apps, repackaging legitimate apps, using fake security applications, and SMiShing (SMS Phishing)
+
+
+a. Sniff credentials using the Social-Engineer Toolkit (SET)
+
+$ setoolkit
+> 1   (Social Engineering Attack)
+> 2    (Website Attack Vectors)
+> 3    (Credential Harvester Attack Methods)
+> 2    (Site Cloner)
+> 10.10.1.13      (IP Address for the POST back in Harvester/Tabnabbing)
+> http://www.moviescope.com        (url to clone)
+
+Send http://10.10.1.13 by email, hyperlinked by original url
+
+
+
+
+2. Detect a phishing attack
+
+a. Detect phishing using Netcraft
+b. Detect phishing using PhishTank
+
+PS: PhishTank provides an open API for developers and researchers to integrate anti-phishing data into their applications.
+
+PS: PhishTank is a free community site on which anyone can submit, verify, track, and share phishing data.
+
+
+
+3. Audit organization's security for phishing attacks
+
+a. Audit organization's security for phishing attacks using OhPhish
+
+PS: OhPhish is a web-based portal for testing employees’ susceptibility to social engineering attacks. 
+
+It is a phishing simulation tool that provides an organization with a platform to launch phishing simulation campaigns on its employees. The platform captures the responses and provides MIS reports and trends (on a real-time basis) that can be tracked according to the user, department, or designation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
